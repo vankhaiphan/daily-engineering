@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalOverflow, LESSON } from "./helpers";
+import { DRAFT_PATHS, expectNoHorizontalOverflow, LESSON } from "./helpers";
 
 test("root redirects using Accept-Language", async ({ browser }) => {
   const context = await browser.newContext({ locale: "fr-FR" });
@@ -38,7 +38,7 @@ test("switching language mid-lesson keeps the reader's section", async ({ page }
 });
 
 for (const locale of ["en", "vi", "fr"]) {
-  for (const path of ["", "/lessons/building-effective-agents", "/lessons/building-effective-agents/explore"]) {
+  for (const path of ["", "/lessons/building-effective-agents", "/lessons/building-effective-agents/explore", ...DRAFT_PATHS]) {
     test(`no horizontal overflow: /${locale}${path}`, async ({ page }) => {
       await page.goto(`/${locale}${path}`);
       await expect(page.locator("main")).toBeVisible();
@@ -81,7 +81,7 @@ test("no console errors or hydration failures in any language", async ({ page })
     if (message.type() === "error") problems.push(message.text());
   });
   for (const locale of ["vi", "en", "fr"]) {
-    for (const path of ["", "/lessons/building-effective-agents", "/lessons/building-effective-agents/explore"]) {
+    for (const path of ["", "/lessons/building-effective-agents", "/lessons/building-effective-agents/explore", ...DRAFT_PATHS]) {
       await page.goto(`/${locale}${path}`, { waitUntil: "networkidle" });
     }
   }

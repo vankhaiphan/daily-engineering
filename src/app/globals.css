@@ -185,6 +185,9 @@ dialog.sheet::backdrop {
 @keyframes flow-dash {
   to { stroke-dashoffset: -12; }
 }
+.chart-bar {
+  transition: height 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 .flow-node rect,
 .flow-node text {
   transition: fill 250ms ease, stroke 250ms ease, opacity 250ms ease;
@@ -192,7 +195,7 @@ dialog.sheet::backdrop {
 
 @media (prefers-reduced-motion: reduce) {
   .flow-edge-active { animation: none; stroke-dasharray: none; }
-  .flow-node rect, .flow-node text { transition: none; }
+  .flow-node rect, .flow-node text, .chart-bar { transition: none; }
   html:focus-within { scroll-behavior: auto; }
 }
 

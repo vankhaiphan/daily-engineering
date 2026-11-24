@@ -5,7 +5,7 @@
  * generated content before it is published.
  */
 import { LOCALES, type Locale } from "@/lib/i18n/config";
-import type { Block, FlowExplorerSpec, Lesson, Localized } from "./schema";
+import type { Block, ChartSpec, FlowExplorerSpec, Lesson, Localized, SequenceSpec, VisualSpec } from "./schema";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -132,6 +132,70 @@ export function validateFlowExplorer(spec: FlowExplorerSpec, path: string): stri
   return errors;
 }
 
+export function validateSequence(spec: SequenceSpec, path: string): string[] {
+  const errors: string[] = [];
+  const ids = new Set(spec.participants.map((p) => p.id));
+  if (spec.participants.length < 2 || spec.participants.length > 4) errors.push(`${path}: needs 2–4 participants (phone width)`);
+  if (ids.size !== spec.participants.length) errors.push(`${path}: duplicate participant ids`);
+  spec.participants.forEach((p) => checkLocalized(p.label, `${path}.participant.${p.id}`, errors));
+  if (spec.scenarios.length === 0) errors.push(`${path}: no scenarios`);
+  for (const scenario of spec.scenarios) {
+    const sp = `${path}.${scenario.id}`;
+    checkLocalized(scenario.label, `${sp}.label`, errors);
+    checkLocalized(scenario.summary, `${sp}.summary`, errors);
+    if (scenario.steps.length === 0) errors.push(`${sp}: no steps`);
+    if (scenario.steps.length > 12) errors.push(`${sp}: more than 12 steps (split the scenario)`);
+    scenario.steps.forEach((step, i) => {
+      const stp = `${sp}.step${i + 1}`;
+      if (!ids.has(step.from) || !ids.has(step.to)) errors.push(`${stp}: unknown participant`);
+      if ((step.from === step.to) !== (step.style === "note")) errors.push(`${stp}: notes (and only notes) stay on one lifeline`);
+      checkLocalized(step.label, `${stp}.label`, errors);
+      checkLocalized(step.caption, `${stp}.caption`, errors);
+    });
+    if (!scenario.steps.at(-1)?.outcome) errors.push(`${sp}: last step needs an outcome`);
+  }
+  return errors;
+}
+
+export function validateChart(spec: ChartSpec, path: string): string[] {
+  const errors: string[] = [];
+  checkLocalized(spec.valueLabel, `${path}.valueLabel`, errors);
+  checkLocalized(spec.method, `${path}.method`, errors);
+  if (!(spec.yMax > 0)) errors.push(`${path}: yMax must be > 0`);
+  if (spec.scenarios.length === 0) errors.push(`${path}: no scenarios`);
+  for (const scenario of spec.scenarios) {
+    const sp = `${path}.${scenario.id}`;
+    checkLocalized(scenario.label, `${sp}.label`, errors);
+    if (scenario.frames.length === 0) errors.push(`${sp}: no frames`);
+    scenario.frames.forEach((frame, i) => {
+      const fp = `${sp}.frame${i + 1}`;
+      checkLocalized(frame.label, `${fp}.label`, errors);
+      checkLocalized(frame.caption, `${fp}.caption`, errors);
+      if (frame.bars.length === 0 || frame.bars.length > 24) errors.push(`${fp}: 1–24 bars`);
+      frame.bars.forEach((bar, b) => {
+        checkLocalized(bar.label, `${fp}.bar${b + 1}`, errors);
+        if (!Number.isFinite(bar.value) || bar.value < 0) errors.push(`${fp}.bar${b + 1}: invalid value`);
+        if (bar.value > spec.yMax * 1.0001) errors.push(`${fp}.bar${b + 1}: value above yMax`);
+        if (spec.valueFormat === "percent" && bar.value > 1.0001) errors.push(`${fp}.bar${b + 1}: percent values are 0–1`);
+      });
+    });
+  }
+  return errors;
+}
+
+export function validateVisual(spec: VisualSpec, path: string): string[] {
+  switch (spec.kind) {
+    case "flow":
+      return validateFlowExplorer(spec, path);
+    case "sequence":
+      return validateSequence(spec, path);
+    case "chart":
+      return validateChart(spec, path);
+    default:
+      return [`${path}: unknown visual kind`];
+  }
+}
+
 export function validateLesson(lesson: Lesson): string[] {
   const errors: string[] = [];
   const p = `lesson(${lesson.slug})`;
@@ -150,16 +214,20 @@ export function validateLesson(lesson: Lesson): string[] {
     } catch {
       errors.push(`${p}: source ${source.id} has an invalid URL`);
     }
-    if (!isRealIsoDate(source.publishedOn)) errors.push(`${p}: source ${source.id} invalid publishedOn`);
+    if (source.publishedOn === null) {
+      if (source.role === "primary") errors.push(`${p}: primary source ${source.id} needs a publication date`);
+    } else {
+      if (!isRealIsoDate(source.publishedOn)) errors.push(`${p}: source ${source.id} invalid publishedOn`);
+      if (source.publishedOn > source.accessedOn) errors.push(`${p}: source ${source.id} accessed before publication`);
+    }
     if (!isRealIsoDate(source.accessedOn)) errors.push(`${p}: source ${source.id} invalid accessedOn`);
-    if (source.publishedOn > source.accessedOn) errors.push(`${p}: source ${source.id} accessed before publication`);
     if (source.authors.length === 0) errors.push(`${p}: source ${source.id} has no authors`);
     checkLocalized(source.note, `${p}.source.${source.id}.note`, errors);
   }
 
   // Interactives
   for (const [ref, spec] of Object.entries(lesson.interactives)) {
-    errors.push(...validateFlowExplorer(spec, `${p}.interactive.${ref}`));
+    errors.push(...validateVisual(spec, `${p}.interactive.${ref}`));
   }
 
   // Locale bodies: presence, parity, references
@@ -204,8 +272,10 @@ export function validateLesson(lesson: Lesson): string[] {
           if (!sourceIds.has(block.sourceId)) errors.push(`${bp}: unknown source ${block.sourceId}`);
           if (locale !== "en" && !block.translation?.trim()) errors.push(`${bp}: quote needs a translation`);
         }
-        if (block.type === "interactive" && !lesson.interactives[block.ref]) {
-          errors.push(`${bp}: unknown interactive ${block.ref}`);
+        if (block.type === "interactive") {
+          const spec = lesson.interactives[block.ref];
+          if (!spec) errors.push(`${bp}: unknown interactive ${block.ref}`);
+          else if (spec.kind !== block.widget) errors.push(`${bp}: widget ${block.widget} does not match spec kind ${spec.kind}`);
         }
         if (block.type === "table" && block.rows.some((row) => row.length !== block.columns.length)) {
           errors.push(`${bp}: table row width mismatch`);

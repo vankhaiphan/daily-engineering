@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "slug": "agent-evals",
+      "status": "published",
+      "createdOn": "2026-11-24",
+      "title": "Evals for AI Agents: How to Know Your Agent Really Works",
+      "topics": [
+        "ai-agents",
+        "ai-sdlc",
+        "claude-code"
+      ],
+      "keywords": [
+        "agent evaluation",
+        "evals",
+        "graders",
+        "llm judge",
+        "pass@k",
+        "pass^k",
+        "capability evals",
+        "regression evals",
+        "transcripts",
+        "non-determinism"
+      ],
+      "sources": [
+        "anthropic.com/article/demystifying-evals-for-ai-agents"
+      ]
+    },
+    {
+      "slug": "building-effective-agents",
+      "status": "published",
+      "createdOn": "2026-11-24",
+      "title": "Workflows vs. Agents: Building Effective LLM Systems",
+      "topics": [
+        "ai-agents",
+        "multi-agent-systems",
+        "claude-code",
+        "system-design"
+      ],
+      "keywords": [
+        "agentic systems",
+        "workflows vs agents",
+        "prompt chaining",
+        "routing",
+        "parallelization",
+        "orchestrator-workers",
+        "evaluator-optimizer",
+        "agent loop",
+        "agent-computer interface",
+        "tool design"
+      ],
+      "sources": [
+        "anthropic.com/article/building-effective-agents",
+        "anthropic.com/article/multi-agent-research-system"
+      ]
+    },
+    {
+      "slug": "timeouts-retries-backoff",
+      "status": "published",
+      "createdOn": "2026-11-24",
+      "title": "Timeouts, Retries and Backoff with Jitter: Surviving Partial Failure",
+      "topics": [
+        "distributed-systems",
+        "backend",
+        "aws",
+        "system-design"
+      ],
+      "keywords": [
+        "timeouts",
+        "retries",
+        "exponential backoff",
+        "jitter",
+        "retry amplification",
+        "token bucket",
+        "idempotency",
+        "idempotency key",
+        "circuit breaker",
+        "partial failure"
+      ],
+      "sources": [
+        "aws-builders-library/timeouts-retries-and-backoff-with-jitter",
+        "aws-builders-library/making-retries-safe-with-idempotent-apis",
+        "docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html"
+      ]
+    }
+  ]
+}

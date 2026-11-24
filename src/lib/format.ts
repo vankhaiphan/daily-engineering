@@ -21,3 +21,18 @@ export function formatDate(iso: string, locale: Locale): string {
       return `${MONTHS.en[m - 1]} ${d}, ${y}`;
   }
 }
+
+/**
+ * Percent for teaching contexts: never rounds a non-certain probability up to
+ * "100%" (or a non-zero one down to "0%"), which would overstate certainty.
+ */
+export function formatPercent(fraction: number): string {
+  const v = fraction * 100;
+  if (fraction >= 1) return "100%";
+  if (fraction <= 0) return "0%";
+  if (v >= 99.95) return ">99.9%";
+  if (v >= 99.5) return `${v.toFixed(1)}%`;
+  if (v < 0.05) return "<0.1%";
+  if (v < 10) return `${v.toFixed(1)}%`;
+  return `${Math.round(v)}%`;
+}

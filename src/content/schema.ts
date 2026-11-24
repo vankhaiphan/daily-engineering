@@ -11,7 +11,9 @@
  *   diagrams) lives once on `Lesson` and uses `Localized<string>` for its
  *   short labels. `validateLesson` enforces that every locale body has the
  *   same section/block skeleton.
- * - Inline text supports a tiny markup subset: **bold** and `code`.
+ * - Inline text supports a tiny markup subset: **bold**, *italic* and `code`.
+ * - Lessons carry a `review` record: every non-trivial claim is listed with
+ *   evidence, and anything not verified is flagged for a human before publish.
  */
 import type { Locale } from "@/lib/i18n/config";
 
@@ -27,7 +29,8 @@ export interface SourceRef {
   /** Authors exactly as credited on the source page. */
   authors: string[];
   url: string;
-  publishedOn: IsoDate;
+  /** null when the source page does not state a date (never guess one). */
+  publishedOn: IsoDate | null;
   accessedOn: IsoDate;
   role: "primary" | "supporting";
   note?: Localized;
@@ -78,9 +81,9 @@ export type Block =
     }
   /** `text` is verbatim from the source (never translated); `translation` is ours. */
   | { type: "quote"; text: string; translation?: string; sourceId: string }
-  | { type: "code"; language: "ts" | "jsonc" | "text"; code: string; caption?: string }
+  | { type: "code"; language: "ts" | "jsonc" | "yaml" | "text"; code: string; caption?: string }
   | { type: "table"; caption?: string; columns: string[]; rows: string[][] }
-  | { type: "interactive"; widget: "flow-explorer"; ref: string }
+  | { type: "interactive"; widget: VisualKind; ref: string }
   | { type: "quiz"; questions: QuizQuestion[] }
   | {
       type: "interview";
@@ -113,8 +116,16 @@ export interface LessonBody {
 }
 
 /* ------------------------------------------------------------------ */
-/* Interactive flow explorer (data-driven, reusable across lessons)    */
+/* Visualizations (data-driven, reusable across lessons)               */
+/*   flow     → architecture / data flow / state machines              */
+/*   sequence → request-response timelines between participants       */
+/*   chart    → interactive numeric comparisons (scenarios × steps)    */
 /* ------------------------------------------------------------------ */
+
+export type VisualKind = "flow" | "sequence" | "chart";
+
+/** success · stopped safely (a limit fired) · rejected early (a gate stopped bad input) · failed. */
+export type StepOutcome = "success" | "stopped" | "rejected" | "failed";
 
 export type FlowNodeKind = "io" | "llm" | "code" | "tool" | "human" | "stop";
 
@@ -145,7 +156,7 @@ export interface FlowStep {
   /** LLM calls made in this step (0 for plain code / tool steps). */
   calls: number;
   caption: Localized;
-  outcome?: "success" | "stopped" | "rejected";
+  outcome?: StepOutcome;
 }
 
 export interface FlowVariant {
@@ -169,10 +180,73 @@ export interface FlowScenario {
 }
 
 export interface FlowExplorerSpec {
+  kind: "flow";
   id: string;
+  /** Label of the first chip row (default: "Pattern"). */
+  scenarioLabel?: Localized;
+  /** Which counters to show (default: LLM calls + sequential rounds). */
+  metrics?: "calls+rounds" | "calls" | "none";
   viewBox: { width: number; height: number };
   scenarios: FlowScenario[];
 }
+
+export type MessageStyle = "request" | "response" | "error" | "timeout" | "note";
+
+export interface SequenceStep {
+  from: string;
+  /** Same as `from` for a note/wait on one lifeline. */
+  to: string;
+  label: Localized;
+  style: MessageStyle;
+  caption: Localized;
+  outcome?: StepOutcome;
+}
+
+export interface SequenceScenario {
+  id: string;
+  label: Localized;
+  summary: Localized;
+  steps: SequenceStep[];
+}
+
+export interface SequenceSpec {
+  kind: "sequence";
+  id: string;
+  participants: { id: string; label: Localized; kind: FlowNodeKind }[];
+  scenarios: SequenceScenario[];
+}
+
+export type BarTone = "accent" | "muted" | "ok" | "bad";
+
+export interface ChartFrame {
+  /** Short step label, e.g. "k = 3" or "Round 2". */
+  label: Localized;
+  caption: Localized;
+  bars: { label: Localized; value: number; tone?: BarTone }[];
+}
+
+export interface ChartScenario {
+  id: string;
+  label: Localized;
+  frames: ChartFrame[];
+}
+
+export interface ChartSpec {
+  kind: "chart";
+  id: string;
+  /** What the bars measure, e.g. "Probability" or "Requests". */
+  valueLabel: Localized;
+  valueFormat: "percent" | "integer" | "multiplier";
+  /** Fixed scale across frames so changes are visible. */
+  yMax: number;
+  /** Show every bar label, or only first/middle/last (histograms). */
+  xLabels: "all" | "sparse";
+  /** Where the numbers come from (formula or simulation), shown to readers. */
+  method: Localized;
+  scenarios: ChartScenario[];
+}
+
+export type VisualSpec = FlowExplorerSpec | SequenceSpec | ChartSpec;
 
 /* ------------------------------------------------------------------ */
 
@@ -187,6 +261,33 @@ export type Topic =
   | "backend"
   | "algorithms";
 
+export type ClaimStatus =
+  /** Checked against the cited source; `evidence` holds a short quote. */
+  | "verified"
+  /** Our own math/illustration; `evidence` explains how it was derived/tested. */
+  | "derived"
+  /** Could not be confirmed: blocks publishing until a human resolves it. */
+  | "needs-review";
+
+export interface ClaimCheck {
+  id: string;
+  /** The claim as taught (English). */
+  claim: string;
+  sourceId?: string;
+  /** Short verbatim quote (≤ 300 chars) or derivation note. Never a long passage. */
+  evidence: string;
+  status: ClaimStatus;
+  note?: string;
+}
+
+export interface LessonReview {
+  claims: ClaimCheck[];
+  reviewedBy?: string;
+  reviewedOn?: IsoDate;
+}
+
+export type LessonStatus = "draft" | "published";
+
 export interface Lesson {
   id: string;
   slug: string;
@@ -194,9 +295,16 @@ export interface Lesson {
   version: number;
   /** When this lesson was written/published in the app. */
   createdOn: IsoDate;
+  /** Drafts show in development and preview deployments only. */
+  status: LessonStatus;
   level: "foundation" | "intermediate" | "advanced";
   topics: Topic[];
+  /** Lower-case concepts used for duplicate / near-duplicate detection. */
+  keywords: string[];
   sources: SourceRef[];
-  interactives: Record<string, FlowExplorerSpec>;
+  interactives: Record<string, VisualSpec>;
+  review: LessonReview;
+  /** How the lesson was produced (manual, or the lesson-generation skill). */
+  provenance: { method: "manual" | "lesson-generation-skill"; candidateId?: string };
   content: Localized<LessonBody>;
 }

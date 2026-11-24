@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { FlowExplorerSpec, Lesson, LessonBody, SourceRef } from "@/content/schema";
+import type { Lesson, LessonBody, SourceRef, VisualSpec } from "@/content/schema";
 import type { Locale } from "@/lib/i18n/config";
 import { getUI, type UIStrings } from "@/lib/i18n/ui";
 
@@ -12,7 +12,7 @@ export interface LessonContextValue {
   level: Lesson["level"];
   body: LessonBody;
   sources: SourceRef[];
-  interactives: Record<string, FlowExplorerSpec>;
+  interactives: Record<string, VisualSpec>;
   sectionIds: string[];
   basePath: string;
 }

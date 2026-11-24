@@ -182,7 +182,7 @@ export const en: LessonBody = {
           type: "p",
           text: "Pick a pattern and a scenario, then press Play or step through. Watch two counters: **LLM calls** (a proxy for cost) and **sequential rounds** (a proxy for latency). The traces are illustrative examples written for this lesson, not measurements.",
         },
-        { type: "interactive", widget: "flow-explorer", ref: "patterns" },
+        { type: "interactive", widget: "flow", ref: "patterns" },
       ],
     },
     {
@@ -367,19 +367,19 @@ export const en: LessonBody = {
               id: "q-parallel",
               prompt:
                 "Your code-review assistant runs three independent reviewers (security, performance, style) at the same time instead of one after another. What changes?",
-              correctOptionId: "b",
+              correctOptionId: "a",
               options: [
                 {
                   id: "a",
-                  text: "Fewer LLM calls, so lower cost",
-                  feedback:
-                    "No. There are still three calls. Running them in parallel does not make them cheaper.",
-                },
-                {
-                  id: "b",
                   text: "Same number of calls, lower end-to-end latency",
                   feedback:
                     "Right. Cost stays at three calls, but they happen in one round instead of three. This is sectioning: independent subtasks run simultaneously.",
+                },
+                {
+                  id: "b",
+                  text: "Fewer LLM calls, so lower cost",
+                  feedback:
+                    "No. There are still three calls. Running them in parallel does not make them cheaper.",
                 },
                 {
                   id: "c",
@@ -393,7 +393,7 @@ export const en: LessonBody = {
               id: "q-stopping",
               prompt:
                 "Your coding agent sometimes loops for a long time, editing files and re-running tests. Which change best follows the article's guidance?",
-              correctOptionId: "b",
+              correctOptionId: "c",
               options: [
                 {
                   id: "a",
@@ -403,15 +403,15 @@ export const en: LessonBody = {
                 },
                 {
                   id: "b",
-                  text: "Add a maximum number of iterations and hand the trace to a human when it is reached",
-                  feedback:
-                    "Correct. The article recommends stopping conditions, such as a maximum number of iterations, to maintain control, and agents can pause for human feedback when they hit blockers.",
-                },
-                {
-                  id: "c",
                   text: "Move to a bigger framework with more abstraction",
                   feedback:
                     "The article warns that abstraction layers can obscure the underlying prompts and responses, which makes exactly this kind of problem harder to debug.",
+                },
+                {
+                  id: "c",
+                  text: "Add a maximum number of iterations and hand the trace to a human when it is reached",
+                  feedback:
+                    "Correct. The article recommends stopping conditions, such as a maximum number of iterations, to maintain control, and agents can pause for human feedback when they hit blockers.",
                 },
               ],
             },

@@ -24,6 +24,8 @@ export default defineConfig({
     ? undefined
     : {
         command: `npx next start --port ${PORT}`,
+        // Draft lessons are part of what we test locally (they are hidden in production).
+        env: { SHOW_DRAFT_LESSONS: "true" },
         url: `http://localhost:${PORT}/en`,
         reuseExistingServer: false,
         timeout: 60_000,

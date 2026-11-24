@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format";
+import { SourceDate } from "@/components/SourceDate";
 import { getUI } from "@/lib/i18n/ui";
 import { readingMinutes } from "@/lib/reading-time";
 import { useLesson } from "./LessonContext";
@@ -21,7 +21,7 @@ export function LessonIntro({ compact = false }: { compact?: boolean }) {
           <a href={primary.url} target="_blank" rel="noopener noreferrer" className="font-medium text-ink-2 underline underline-offset-2" lang="en">
             {primary.title}
           </a>{" "}
-          · {primary.publisher} · <time dateTime={primary.publishedOn}>{formatDate(primary.publishedOn, locale)}</time>
+          · {primary.publisher} · <SourceDate iso={primary.publishedOn} locale={locale} fallback={ui.sources.noDate} />
         </p>
       ) : null}
     </div>

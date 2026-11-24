@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "note": "Discovery seeds. Open the index, read real titles/dates, never infer them. Access notes record what worked on the last run.",
+  "seeds": [
+    {
+      "name": "claude.dev blog",
+      "url": "https://claude.dev",
+      "kind": "recent",
+      "focus": ["claude-code", "ai-agents", "ai-sdlc"],
+      "access": "Index lists title, date, read time; first page only (\"Load more\" not followed). Checked 2026-11-24."
+    },
+    {
+      "name": "Anthropic Engineering",
+      "url": "https://www.anthropic.com/engineering",
+      "kind": "recent",
+      "focus": ["ai-agents", "multi-agent-systems", "claude-code"],
+      "access": "Index lists 24 of 29 posts with dates; article paths now under /research/ (old /engineering/ URLs still resolve). Checked 2026-11-24."
+    },
+    {
+      "name": "OpenAI for Developers blog",
+      "url": "https://developers.openai.com/blog",
+      "kind": "recent",
+      "focus": ["ai-agents", "ai-sdlc"],
+      "access": "Index lists titles and URLs but no dates; open each article to get its date before scoring. Checked 2026-11-24."
+    },
+    {
+      "name": "AWS Builders' Library",
+      "url": "https://aws.amazon.com/builders-library/",
+      "kind": "evergreen",
+      "focus": ["distributed-systems", "aws", "backend", "system-design"],
+      "access": "Index redirects to builder.aws.com and renders client-side (no list in fetched HTML). Old article URLs redirect to builder.aws.com/content/<id>/<slug> and do load. Checked 2026-11-24."
+    },
+    {
+      "name": "AWS Architecture Blog",
+      "url": "https://aws.amazon.com/blogs/architecture/",
+      "kind": "evergreen",
+      "focus": ["aws", "distributed-systems"],
+      "access": "Article body did not come through the fetch tool for 'Exponential Backoff and Jitter' (navigation only), re-checked twice on 2026-11-24. The full-jitter formula was verified instead against the AWS SDK reference: https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html"
+    }
+  ]
+}

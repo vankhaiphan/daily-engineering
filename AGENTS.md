@@ -21,3 +21,7 @@ Uses the five default labels: needs-triage, needs-info, ready-for-agent, ready-f
 ### Domain docs
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Lesson content
+
+Lessons are data in `src/content/lessons/<slug>/`, registered through `src/content/catalog.json`. To discover topics or generate, regenerate, validate or publish lessons, follow `.claude/skills/lesson-discovery` and `.claude/skills/lesson-generation` and the handbook `content-pipeline/README.md`. Never mark a claim `verified` without a verbatim quote seen in the current session; never publish (`content:publish`) without a human reviewer.
