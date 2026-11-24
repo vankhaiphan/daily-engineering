@@ -1,4 +1,4 @@
-import type { ChartFrame, ChartSpec, FlowExplorerSpec, Localized, VisualSpec } from "@/content/schema";
+import type { ChartFrame, ChartSpec, FlowEdge, FlowExplorerSpec, FlowNode, Localized, VisualSpec } from "@/content/schema";
 import { formatPercent } from "@/lib/format";
 
 const L = (en: string, vi: string, fr: string): Localized => ({ en, vi, fr });
@@ -8,7 +8,7 @@ const same = (text: string): Localized => ({ en: text, vi: text, fr: text });
 /* 1. Anatomy of one trial (flow)                                      */
 /* ------------------------------------------------------------------ */
 
-const NODES: FlowExplorerSpec["scenarios"][number]["nodes"] = [
+const NODES: FlowNode[] = [
   { id: "task", kind: "io", label: L("Task + success criteria", "Task + tiêu chí đạt", "Tâche + critères de réussite"), x: 170, y: 28, w: 230, h: 38 },
   { id: "env", kind: "tool", label: L("Fresh environment", "Môi trường sạch", "Environnement neuf"), x: 170, y: 96, w: 180, h: 38 },
   { id: "agent", kind: "llm", label: L("Agent runs a trial", "Agent chạy một trial", "L'agent fait un essai"), x: 170, y: 164, w: 180, h: 38 },
@@ -19,7 +19,7 @@ const NODES: FlowExplorerSpec["scenarios"][number]["nodes"] = [
   { id: "score", kind: "stop", label: L("Trial score", "Điểm của trial", "Score de l'essai"), x: 170, y: 390, w: 180, h: 38 },
 ];
 
-const EDGES: FlowExplorerSpec["scenarios"][number]["edges"] = [
+const EDGES: FlowEdge[] = [
   { id: "t1", from: "task", to: "env" },
   { id: "t2", from: "env", to: "agent" },
   { id: "t3", from: "agent", to: "transcript" },

@@ -225,7 +225,7 @@ function guardChanges(config: ScheduleConfig): string[] {
   const head = readCatalog();
   // Everything this branch changes vs the base (committed, staged and unstaged).
   const changed = [
-    ...run("git", ["diff", "--name-only", baseRef(config)]).output.split("\n"),
+    ...run("git", ["diff", "--name-only", "--no-renames", baseRef(config)]).output.split("\n"),
     ...run("git", ["ls-files", "--others", "--exclude-standard"]).output.split("\n"),
   ].filter(Boolean);
   const lessonDirs = [...new Set(changed.filter((p) => p.startsWith("src/content/lessons/")).map((p) => p.split("/")[3]))];

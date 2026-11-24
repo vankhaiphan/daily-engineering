@@ -14,8 +14,15 @@ Prompts to paste into the tasks: [`scheduled/morning.md`](scheduled/morning.md),
 - **Pending topics are visible to the next run.** Each slot branch carries `content-pipeline/runs/<slot>.json` (topic, URL, keywords, status). `plan` reads every unmerged `content/*` branch with plain git, including hand-made ones (through their `coverage.json`), and skips topics already pending.
 - **Backlog limit.** No new run starts while `maxPendingLessons` (default 4) lesson branches await review. Set it in `schedule.json`.
 - **Drafts only, enforced in layers:**
-  1. **GitHub ruleset on `main`** (required, see setup): PRs only, a required approval (so the bot can't merge its own PR), no force-push or deletion, and the `content-safety` check required.
-  2. **`content-safety` CI check** (`.github/workflows/content-safety.yml`): on every PR from a `content/<date>-<slot>` branch, it fails if the PR publishes or unpublishes a lesson, edits an existing lesson, or changes anything besides its new lesson folder and the pipeline records. It runs via `pull_request_target`, i.e. **from `main`'s copy** of the workflow and script, and reads the PR only as git data. A PR can't weaken the check that judges it.
+  1. **GitHub ruleset on `main`** (required, see setup): PRs only, your code-owner approval required on every PR (so no bot PR, under any branch name, can be merged without you), no force-push or deletion, and the `content-safety` check required.
+  2. **`content-safety` CI check** (`.github/workflows/content-safety.yml`, rules in `scripts/ci/content-safety.mjs`) on **every** PR, whatever its branch name:
+     - `catalog.json` is strictly valid, and `registry.ts` must equal the generator's output (no hand-written code there).
+     - No lesson is removed or unpublished, and files of existing lessons can't change.
+     - Publishing is only allowed in a `publish/<slug>` PR that publishes exactly that lesson and touches only its `index.ts`/`review.ts` and the pipeline records.
+     - New lesson files must be flat `.ts` files importing only `@/content/schema`, `@/lib/i18n/config`, `@/lib/format` or sibling files, with no dynamic code, IO or globals.
+     - PRs from `content/<date>-<slot>` branches may only add a new lesson folder and pipeline records.
+
+     It runs via `pull_request_target`, i.e. **from `main`'s copy** of the workflow and script; it reads the PR only as git data (renames off, so moved files show both paths). A PR can't weaken the check that judges it. Publish status shown by the app comes only from `catalog.json`, so a lesson module can't publish itself.
   3. **`content:publish` is human-only:** it requires an interactive terminal and asks you to retype the slug (agent tool calls aren't terminals), and it refuses when `DAILY_ENGINEERING_SCHEDULED` or `CLAUDE_CODE_REMOTE` is set.
   4. **Local guard:** `finish`/`block` refuse to commit the same violations as the CI check, and push only the slot branch, never with force.
   5. Best effort only: `.claude/settings.json` denies common forms of publish, force-push, pushes to `main`, branch deletion and PR merge. Prefix rules can be sidestepped, so they are a convenience, not a boundary.
@@ -38,7 +45,7 @@ Exit codes: `0` ok · `1` failed or blocked · `2` nothing to do (no-op) · `3` 
 
 ### 1. GitHub
 1. Install the **Claude GitHub App** on `vankhaiphan/daily-engineering` (or connect with `/web-setup`). Cloud runs reach GitHub only through Anthropic's GitHub proxy; no token lives in the repo or the VM.
-2. **Protect `main`** with a ruleset (Settings → Rules → Rulesets), **required before activating the schedules**: target `main`; require a pull request before merging with **1 approval**; require the status check **`scheduled-run-safety`** (from the `content-safety` workflow; it appears after its first run); block force pushes; restrict deletions. Add yourself (repository admin) to the bypass list so you can still merge your own PRs. The GitHub proxy doesn't restrict which branch a run can push. This ruleset is what actually enforces "never push to main" and "never merge"; the scripts and settings are extra layers.
+2. **Protect `main`** with a ruleset (Settings → Rules → Rulesets), **required before activating the schedules**: target `main`; require a pull request before merging with **1 approval** and **Require review from Code Owners** (`.github/CODEOWNERS` names you for every path, so a bot can never supply the approval, whatever branch name it uses); require the status check **`scheduled-run-safety`** (from the `content-safety` workflow; it appears after its first run); block force pushes; restrict deletions. Add yourself (repository admin) to the bypass list so you can still merge your own PRs. The GitHub proxy doesn't restrict which branch a run can push. This ruleset is what actually enforces "never push to main" and "never merge"; the scripts and settings are extra layers.
 3. PRs are created with the REST API (`gh api repos/{owner}/{repo}/pulls`) because the proxy rejects GraphQL (`gh pr create`). If that still fails, the run reports the compare URL and you open the PR by hand.
 
 ### 2. Cloud environment (claude.ai/code → environment settings)
@@ -112,4 +119,7 @@ Bot PRs only ever add drafts; publishing is a separate, human-only change.
    npm run check
    git commit -am "content: publish <slug>" && git push -u origin publish/<slug>
    ```
-4. Open and merge that PR. Production shows the lesson after the deploy. (The `content-safety` check ignores `publish/*` branches; the publish gate already ran.)
+4. Open and merge that PR. Production shows the lesson after the deploy. (`content-safety` accepts a `publish/<slug>` PR only if it publishes exactly that lesson and touches nothing else.)
+
+### Residual risk (read before activating)
+Lesson files are TypeScript, so a new lesson's code runs at build time, including Vercel **preview** builds of bot PRs before anyone reviews them. The import allowlist and forbidden-code rules are defense in depth, not a sandbox. Keep the Vercel project free of secrets (it needs none), and treat the required human approval, which includes skimming the lesson diff, as the real control. The structural fix, storing lesson content as JSON data instead of code, is a possible future change, not part of Phase 4.

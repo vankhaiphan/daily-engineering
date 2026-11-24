@@ -314,44 +314,115 @@ describe("content:publish is human-only", () => {
   }, 30_000);
 });
 
-describe("scheduled runs may only add a draft lesson (local guard + CI check)", async () => {
+describe("content-safety CI check (every PR) and the local guard", async () => {
   const { findForbiddenPaths } = await import("@/content/schedule");
-  const { check } = (await import("../../scripts/ci/content-safety.mjs")) as {
+  const { renderRegistry: renderTs } = await import("@/content/pipeline");
+  const { check, renderRegistry, checkLessonSource, validateCatalog } = (await import("../../scripts/ci/content-safety.mjs")) as {
     check: (i: object) => string[];
+    renderRegistry: (c: object[]) => string;
+    checkLessonSource: (p: string, s: string) => string[];
+    validateCatalog: (c: unknown) => string[];
   };
-  const base = [{ slug: "a", status: "published" }];
+  const base = [{ slug: "a", status: "published", createdOn: "2026-11-24" }];
+  const head = [...base, { slug: "new", status: "draft", createdOn: "2026-11-25" }];
   const ok = {
     branch: "content/2026-11-25-morning",
     baseCatalog: base,
-    headCatalog: [...base, { slug: "new", status: "draft" }],
+    headCatalog: head,
+    headRegistry: renderRegistry(head),
     baseLessonDirs: ["a", "registry.ts"],
-    readHead: () => 'status: "draft"',
+    readHead: () => 'import type { LessonBody } from "@/content/schema";\nexport const en = { title: "the review process" };',
     changed: ["src/content/catalog.json", "src/content/lessons/registry.ts", "src/content/lessons/new/en.ts", "src/content/lessons/new/index.ts", "content-pipeline/runs/2026-11-25-morning.json", "content-pipeline/coverage.json"],
   };
+  const fails = (override: object, message: string) => expect(check({ ...ok, ...override }).join("\n")).toContain(message);
 
-  it("allows a new draft lesson with its pipeline records", () => {
+  it("passes a scheduled run that only adds a draft lesson", () => {
     expect(check(ok)).toEqual([]);
     expect(findForbiddenPaths(ok.changed, ["new"])).toEqual([]);
   });
 
-  it.each([
-    ["publishing via the catalog", { headCatalog: [...base, { slug: "new", status: "published" }] }, "publishes new"],
-    ["publishing via the lesson index", { readHead: () => 'status: "published"' }, 'declares status "published"'],
-    ["unpublishing an existing lesson", { headCatalog: [{ slug: "a", status: "draft" }, { slug: "new", status: "draft" }] }, "unpublishes a"],
-    ["editing an existing lesson", { changed: [...ok.changed, "src/content/lessons/a/en.ts"] }, "changes src/content/lessons/a/en.ts"],
-    ["editing the CI workflow", { changed: [...ok.changed, ".github/workflows/content-safety.yml"] }, "changes .github/workflows"],
-    ["editing scripts or settings", { changed: [...ok.changed, "scripts/content/publish.mts", ".claude/settings.json"] }, "changes scripts/content/publish.mts"],
-  ])("rejects %s", (_label, override, message) => {
-    const violations = check({ ...ok, ...override });
-    expect(violations.join("\n")).toContain(message);
+  it("uses the same registry template as the app's generator", () => {
+    expect(renderRegistry(head)).toBe(renderTs(head as never));
+    expect(renderRegistry(CATALOG)).toBe(read("src/content/lessons/registry.ts"));
   });
 
-  it("local guard agrees on forbidden paths", () => {
+  it("rejects publishing from any branch that isn't publish/<that slug>", () => {
+    const published = [...base, { slug: "new", status: "published", createdOn: "2026-11-25" }];
+    for (const branch of ["content/2026-11-25-morning", "feature/innocent", "publish/other"]) {
+      fails({ branch, headCatalog: published, headRegistry: renderRegistry(published) }, "publishing is only allowed in a publish/<slug> PR");
+    }
+  });
+
+  it("allows a narrow human publish PR, and nothing more in it", () => {
+    const published = [{ slug: "a", status: "published", createdOn: "2026-11-24" }, { slug: "b", status: "published", createdOn: "2026-11-25" }];
+    const pub = {
+      branch: "publish/b",
+      baseCatalog: [base[0], { slug: "b", status: "draft", createdOn: "2026-11-25" }],
+      headCatalog: published,
+      headRegistry: renderRegistry(published),
+      baseLessonDirs: ["a", "b", "registry.ts"],
+      changed: ["src/content/catalog.json", "src/content/lessons/b/index.ts", "src/content/lessons/b/review.ts", "content-pipeline/coverage.json", "content-pipeline/reviews/b.md"],
+    };
+    expect(check({ ...ok, ...pub })).toEqual([]);
+    expect(check({ ...ok, ...pub, changed: [...pub.changed, "src/app/page.tsx"] }).join("\n")).toContain("publish PR also changes src/app/page.tsx");
+  });
+
+  it.each([
+    ["unpublishing", { headCatalog: [{ ...base[0], status: "draft" }], headRegistry: renderRegistry([{ ...base[0], status: "draft" }]) }, "removes or unpublishes a"],
+    ["a hand-edited registry", { headRegistry: renderRegistry(head) + "\nimport('evil');" }, "registry.ts is not the generated output"],
+    ["a path-traversal slug", { headCatalog: [...base, { slug: "../app", status: "draft", createdOn: "2026-11-25" }] }, "invalid slug"],
+    ["extra catalog fields", { headCatalog: [...base, { slug: "x", status: "draft", createdOn: "2026-11-25", publish: true }] }, "unexpected fields"],
+    ["an edit to an existing lesson (any branch)", { branch: "feature/typo", changed: ["src/content/lessons/a/en.ts"] }, "changes existing lesson file src/content/lessons/a/en.ts"],
+    ["a rename out of an existing lesson (both paths listed with --no-renames)", { branch: "feature/x", changed: ["src/content/lessons/a/en.ts", "src/content/lessons/new/en.ts"] }, "changes existing lesson file"],
+    ["nested files in a new lesson", { changed: [...ok.changed, "src/content/lessons/new/sub/x.ts"] }, "flat .ts files"],
+    ["unsafe code in a new lesson", { readHead: () => "export const x = process.env.SECRET;" }, "uses"],
+    ["a scheduled run touching scripts or workflows", { changed: [...ok.changed, "scripts/content/publish.mts", ".github/workflows/content-safety.yml"] }, "scheduled runs may only add a new lesson"],
+  ])("rejects %s", (_label, override, message) => fails(override, message));
+
+  it("leaves human code PRs to human review", () => {
+    expect(check({ ...ok, branch: "feat/x", changed: ["scripts/content/schedule.mts"], headCatalog: base, headRegistry: renderRegistry(base) })).toEqual([]);
+  });
+
+  it("lesson source rules ignore prose but catch code", () => {
+    expect(checkLessonSource("x.ts", 'export const t = "the process, window and document";')).toEqual([]);
+    for (const src of ['await import("node:fs")', 'import x from "../other"', 'import "./side-effect"', "const f = ({})[\"constructor\"]", "const s = `${globalThis.fetch}`", 'const s = "unterminated']) {
+      expect(checkLessonSource("x.ts", src).length).toBeGreaterThan(0);
+    }
+    expect(validateCatalog("nope")).toEqual(["catalog.json must be an array"]);
+  });
+
+  it("every existing lesson and the scaffold template pass the source rules", () => {
+    const dirs = readdirSync(new URL("../../src/content/lessons/", import.meta.url), { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => `src/content/lessons/${d.name}`)
+      .concat(["content-pipeline/template"]);
+    for (const dir of dirs) {
+      for (const file of readdirSync(new URL(`../../${dir}/`, import.meta.url))) {
+        expect(checkLessonSource(`${dir}/${file}`, read(`${dir}/${file}`))).toEqual([]);
+      }
+    }
+  });
+
+  it("the local guard rejects forbidden paths too", () => {
     expect(findForbiddenPaths(["src/content/lessons/a/en.ts", ".github/workflows/x.yml", "src/app/page.tsx"], ["new"])).toHaveLength(3);
   });
+});
 
-  it("ignores PRs that are not scheduled-run branches (e.g. a human publish PR)", () => {
-    expect(check({ ...ok, branch: "publish/new", headCatalog: [...base, { slug: "new", status: "published" }] })).toEqual([]);
+describe("visibility comes from catalog.json only", () => {
+  it("a lesson module claiming 'published' stays hidden when the catalog says draft", async () => {
+    const { listLessons } = await import("@/content");
+    const entry = CATALOG.find((e) => e.slug === "agent-evals")!;
+    const previous = process.env.SHOW_DRAFT_LESSONS;
+    entry.status = "draft";
+    process.env.SHOW_DRAFT_LESSONS = "false";
+    try {
+      expect(lessons.find((l) => l.slug === "agent-evals")?.status).toBe("published");
+      expect(listLessons().some((l) => l.slug === "agent-evals")).toBe(false);
+    } finally {
+      entry.status = "published";
+      if (previous === undefined) delete process.env.SHOW_DRAFT_LESSONS;
+      else process.env.SHOW_DRAFT_LESSONS = previous;
+    }
   });
 });
 

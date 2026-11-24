@@ -2,8 +2,12 @@
  * Lesson registry. Lessons are TypeScript modules registered through
  * `catalog.json` → `lessons/registry.ts` (generated). Pages only ever see
  * visible lessons (published, or drafts outside production).
+ *
+ * Publish status comes ONLY from catalog.json (a plain data file the CI check
+ * can verify exactly). A lesson module's own `status` field is checked for
+ * consistency by the validator but never decides visibility.
  */
-import { isVisible } from "./catalog";
+import { CATALOG, isVisible } from "./catalog";
 import { REGISTERED_LESSONS } from "./lessons/registry";
 import type { Lesson } from "./schema";
 
@@ -14,7 +18,10 @@ export function listAllLessons(): readonly Lesson[] {
 
 /** Visible lessons, newest first. */
 export function listLessons(): readonly Lesson[] {
-  return REGISTERED_LESSONS.filter((lesson) => isVisible(lesson.status)).toSorted(
+  return REGISTERED_LESSONS.filter((lesson) => {
+    const entry = CATALOG.find((e) => e.slug === lesson.slug);
+    return entry !== undefined && isVisible(entry.status);
+  }).toSorted(
     (a, b) => b.createdOn.localeCompare(a.createdOn),
   );
 }
