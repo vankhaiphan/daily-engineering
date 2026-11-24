@@ -1,8 +1,9 @@
 # Server-side content safety for EVERY PR into main (rules in
 # scripts/ci/content-safety.mjs). pull_request_target runs THIS file and the
 # script from the base branch, so a PR cannot change the rules it is checked
-# against. The PR is only read as git data; none of its code is installed or
-# executed. Make "scheduled-run-safety" a required status check on main.
+# against. The PR is only read as git data: its lesson files are parsed and
+# type-checked by the TypeScript compiler from main's lockfile (install scripts
+# disabled); none of its code is installed or executed. Make "scheduled-run-safety" a required status check on main.
 name: content-safety
 
 on:
@@ -16,12 +17,17 @@ permissions:
 jobs:
   scheduled-run-safety:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out the base branch (trusted)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install main's dependencies (no install scripts)
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Fetch the PR head as data
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}

@@ -1,29 +1,34 @@
 /**
  * Server-side content safety check for EVERY pull request into main.
  * Runs in GitHub Actions on `pull_request_target` from the BASE branch's copy
- * of this file (a PR can't weaken it), reads the PR only as git data (no
- * install, no PR code executed). Plain Node, no dependencies.
+ * of this file (a PR can't weaken it). The PR is read only as git data: its
+ * lesson files are parsed and type-checked by the TypeScript compiler API
+ * (installed from the base lockfile with scripts disabled), never executed.
  *
  * Rules for every PR (not keyed on branch names):
- *  R1 catalog.json is strictly valid and registry.ts is exactly what the
- *     generator would produce from it (no hand-written code there).
+ *  R1 catalog.json is strictly valid and registry.ts is exactly the generator's
+ *     output (no hand-written code there).
  *  R2 No lesson is removed or unpublished.
- *  R3 Publishing (a catalog entry becoming "published") is only allowed in a
- *     `publish/<slug>` PR that publishes exactly that lesson and changes only
- *     its index.ts/review.ts plus the pipeline records. Human approval of the
- *     PR (ruleset) is still the decision; this keeps publishing narrow and
- *     visible.
+ *  R3 Publishing (a catalog entry becoming "published") only in a
+ *     `publish/<slug>` PR for exactly that lesson, whose index.ts differs from
+ *     main only by the status line and review.ts only by reviewer/date.
  *  R4 Files of lessons that already exist on main can't change (except R3).
- *  R5 New lesson folders: flat .ts files whose imports come from a small
- *     allowlist, with no dynamic code / IO / globals (defense in depth: lesson
- *     modules are code that runs at build time; human review of the diff
- *     remains required).
+ *  R5 Every changed lesson .ts file is a regular git file (no symlinks,
+ *     submodules, executables) and passes an AST allowlist (see
+ *     analyzeLessonFiles). index.ts must declare `slug: "<folder>"`.
  * Extra rule for scheduled-run branches (content/<date>-<slot>):
  *  R6 only a new lesson folder and pipeline records may change.
  * Renames are disabled so a moved file shows both its old and new path.
+ *
+ * Human review stays the real control: CODEOWNERS approval is required for
+ * every PR. These rules are defense in depth for unattended runs.
  */
 import { execFileSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const SCHEDULED_BRANCH = /^content\/\d{4}-\d{2}-\d{2}-(morning|evening)$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -35,22 +40,29 @@ const PIPELINE_FILES = [
   "content-pipeline/sources.json",
 ];
 const PIPELINE_DIRS = ["content-pipeline/runs/", "content-pipeline/reviews/"];
-const ALLOWED_IMPORTS = new Set(["@/content/schema", "@/lib/i18n/config", "@/lib/format"]);
-const FORBIDDEN_CODE = [
-  /\brequire\s*\(/,
-  /\bimport\s*\(/,
-  /\bprocess\b/,
-  /\bglobalThis\b/,
-  /\beval\s*\(/,
-  /\bFunction\s*\(/,
-  /\bfetch\s*\(/,
-  /\bwindow\b/,
-  /\bdocument\b/,
-  /\bconstructor\b/,
-  /__proto__|\bprototype\b/,
-  /[\w$)\]]\s*\[\s*"S\d+"\s*\]/, // computed property access with a string (obj["constructor"]), not array literals
-  /\bnode:/,
-];
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+/** Modules a lesson may import (besides sibling files), as repo-relative files. */
+const ALLOWED_IMPORTS = new Map([
+  ["@/content/schema", "src/content/schema.ts"],
+  ["@/lib/i18n/config", "src/lib/i18n/config.ts"],
+  ["@/lib/format", "src/lib/format.ts"],
+]);
+/** Global values a lesson may reference. Everything else global is rejected. */
+const ALLOWED_GLOBALS = new Set(["Math", "Array", "Number", "String", "Boolean", "Map", "Set", "Error", "Infinity", "NaN", "undefined"]);
+const ALLOWED_NEW = new Set(["Array", "Map", "Set", "Error"]);
+const FORBIDDEN_MEMBERS = new Set([
+  "constructor",
+  "prototype",
+  "__proto__",
+  "__defineGetter__",
+  "__defineSetter__",
+  "__lookupGetter__",
+  "__lookupSetter__",
+  "caller",
+  "callee",
+  "arguments",
+]);
 
 /** Same output as renderRegistry() in src/content/pipeline.ts (a unit test keeps them identical). */
 export function renderRegistry(catalog) {
@@ -80,114 +92,179 @@ export function validateCatalog(catalog) {
   return errors;
 }
 
-/**
- * Split TS source into code and string literals. Strings become "S<n>"
- * placeholders (their values kept in `strings`); comments are dropped;
- * template-literal `${...}` expressions stay in the code, since they execute.
- * Returns undefined if the source can't be tokenized (treated as a violation).
- */
-export function separateCode(source) {
-  let code = "";
-  const strings = [];
-  let i = 0;
-  const stack = []; // open template literals: brace depth inside their ${...}
-  let depth = 0;
-  const readQuoted = (quote) => {
-    let value = "";
-    i++;
-    while (i < source.length && source[i] !== quote) {
-      if (source[i] === "\\") {
-        value += source[i + 1] ?? "";
-        i += 2;
-      } else if (source[i] === "\n") {
-        return undefined;
-      } else value += source[i++];
-    }
-    if (i >= source.length) return undefined;
-    i++;
-    return value;
-  };
-  const readTemplateText = () => {
-    let value = "";
-    while (i < source.length) {
-      if (source[i] === "\\") {
-        value += source[i + 1] ?? "";
-        i += 2;
-      } else if (source[i] === "`") {
-        i++;
-        strings.push(value);
-        code += `"S${strings.length - 1}"`;
-        return "end";
-      } else if (source[i] === "$" && source[i + 1] === "{") {
-        i += 2;
-        strings.push(value);
-        code += `"S${strings.length - 1}"+(`;
-        stack.push(depth);
-        depth = 0;
-        return "expr";
-      } else value += source[i++];
-    }
-    return undefined;
-  };
-  while (i < source.length) {
-    const c = source[i];
-    const n = source[i + 1];
-    if (c === "/" && n === "/") {
-      while (i < source.length && source[i] !== "\n") i++;
-    } else if (c === "/" && n === "*") {
-      const end = source.indexOf("*/", i + 2);
-      if (end < 0) return undefined;
-      i = end + 2;
-    } else if (c === '"' || c === "'") {
-      const value = readQuoted(c);
-      if (value === undefined) return undefined;
-      strings.push(value);
-      code += `"S${strings.length - 1}"`;
-    } else if (c === "`") {
-      i++;
-      if (readTemplateText() === undefined) return undefined;
-    } else if (c === "{") {
-      depth++;
-      code += c;
-      i++;
-    } else if (c === "}" && depth === 0 && stack.length) {
-      i++;
-      code += ")+";
-      depth = stack.pop();
-      if (readTemplateText() === undefined) return undefined;
-    } else {
-      if (c === "}") depth--;
-      code += c;
-      i++;
-    }
-  }
-  return stack.length ? undefined : { code, strings };
+/* ------------------------------------------------------------------ */
+/* AST allowlist for lesson modules                                     */
+/* ------------------------------------------------------------------ */
+
+let tsModule;
+function loadTypeScript() {
+  tsModule ??= createRequire(join(REPO_ROOT, "package.json"))("typescript");
+  return tsModule;
 }
 
-/** Problems in a new lesson file's source (imports outside the allowlist, dynamic code). */
-export function checkLessonSource(path, source) {
-  const parsed = separateCode(source);
-  if (!parsed) return [`${path} could not be parsed safely (unterminated string, template or comment)`];
-  const { code, strings } = parsed;
-  const problems = [];
-  for (const m of code.matchAll(/\b(?:import|export)\b[^;]*?\bfrom\s*"S(\d+)"/g)) {
-    const spec = strings[Number(m[1])];
-    const relative = spec.startsWith("./") && !spec.slice(2).includes("/") && !spec.includes("..");
-    if (!ALLOWED_IMPORTS.has(spec) && !relative) problems.push(`${path} imports "${spec}" (not allowed in lesson files)`);
+/**
+ * Parse and type-check lesson files (never executed) and return violations.
+ * @param {{ path: string, source: string }[]} files  every .ts file of the lesson folders involved
+ * @param {Set<string>} [only]  paths to report on (default: all)
+ */
+export function analyzeLessonFiles(files, only) {
+  const ts = loadTypeScript();
+  const violations = [];
+  if (!files.length) return violations;
+  const tmp = mkdtempSync(join(tmpdir(), "lesson-check-"));
+  try {
+    const byTemp = new Map();
+    for (const f of files) {
+      const parts = f.path.split("/");
+      const temp = join(tmp, parts[3], parts[4]);
+      mkdirSync(dirname(temp), { recursive: true });
+      writeFileSync(temp, f.source);
+      byTemp.set(resolve(temp), f);
+    }
+    const program = ts.createProgram([...byTemp.keys()], {
+      noEmit: true,
+      strict: true,
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      lib: ["lib.esnext.d.ts"],
+      types: [],
+      baseUrl: REPO_ROOT,
+      paths: { "@/*": ["src/*"] },
+      skipLibCheck: true,
+      resolveJsonModule: true,
+    });
+    const checker = program.getTypeChecker();
+    const allowedFiles = new Set([...ALLOWED_IMPORTS.values()].map((p) => resolve(REPO_ROOT, p)));
+    const isLib = (file) => /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]+\.d\.ts$/.test(file);
+
+    for (const [temp, f] of byTemp) {
+      if (only && !only.has(f.path)) continue;
+      const sf = program.getSourceFile(temp);
+      const dir = f.path.split("/")[3];
+      const report = (node, msg) => {
+        const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+        violations.push(`${f.path}:${line + 1} ${msg}`);
+      };
+      for (const d of [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]) {
+        violations.push(`${f.path} does not type-check: ${ts.flattenDiagnosticMessageText(d.messageText, " ")}`);
+      }
+      const slugs = [];
+
+      const inType = (node) => {
+        for (let p = node.parent; p; p = p.parent) {
+          if (ts.isTypeNode(p) || ts.isTypeAliasDeclaration(p) || ts.isInterfaceDeclaration(p)) return true;
+        }
+        return false;
+      };
+
+      const visit = (node) => {
+        switch (node.kind) {
+          case ts.SyntaxKind.RegularExpressionLiteral:
+            report(node, "uses a regular expression literal");
+            break;
+          case ts.SyntaxKind.TaggedTemplateExpression:
+            report(node, "uses a tagged template");
+            break;
+          case ts.SyntaxKind.DeleteExpression:
+          case ts.SyntaxKind.WithStatement:
+          case ts.SyntaxKind.DebuggerStatement:
+          case ts.SyntaxKind.ThisKeyword:
+          case ts.SyntaxKind.ClassDeclaration:
+          case ts.SyntaxKind.ClassExpression:
+          case ts.SyntaxKind.GetAccessor:
+          case ts.SyntaxKind.SetAccessor:
+          case ts.SyntaxKind.ImportEqualsDeclaration:
+          case ts.SyntaxKind.Decorator:
+          case ts.SyntaxKind.MetaProperty:
+          case ts.SyntaxKind.ModuleDeclaration:
+          case ts.SyntaxKind.TypeAssertionExpression:
+            report(node, `uses ${ts.SyntaxKind[node.kind]}`);
+            break;
+          default:
+            break;
+        }
+        if (ts.isImportDeclaration(node) || (ts.isExportDeclaration(node) && node.moduleSpecifier)) {
+          const spec = node.moduleSpecifier.text;
+          const sibling = /^\.\/[a-z0-9-]+$/.test(spec);
+          if (!ALLOWED_IMPORTS.has(spec) && !sibling) report(node, `imports "${spec}" (not allowed in lesson files)`);
+          if (ts.isImportDeclaration(node) && !node.importClause) report(node, "has a side-effect import");
+        }
+        if (ts.isExportAssignment(node) && node.isExportEquals) report(node, "uses export =");
+        if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) report(node, "uses dynamic import()");
+        if (ts.isNewExpression(node) && !(ts.isIdentifier(node.expression) && ALLOWED_NEW.has(node.expression.text))) {
+          report(node, `uses new ${node.expression.getText(sf)}`);
+        }
+        if (ts.isPropertyAccessExpression(node) && FORBIDDEN_MEMBERS.has(node.name.text)) report(node, `accesses .${node.name.text}`);
+        // `x as T` can lie to the checker; only `as const` is allowed.
+        if (ts.isAsExpression(node) && !(ts.isTypeReferenceNode(node.type) && node.type.typeName.getText(sf) === "const")) {
+          report(node, "uses a type assertion (only `as const` is allowed)");
+        }
+        // Bracket access only with keys the checker proves are numbers or known, harmless string literals.
+        if (ts.isElementAccessExpression(node)) {
+          const type = checker.getTypeAtLocation(node.argumentExpression);
+          const parts = type.isUnion() ? type.types : [type];
+          const safe = parts.every(
+            (t) =>
+              (t.flags & ts.TypeFlags.NumberLike) !== 0 ||
+              ((t.flags & ts.TypeFlags.StringLiteral) !== 0 && !FORBIDDEN_MEMBERS.has(t.value)),
+          );
+          if (!safe) report(node, `uses bracket access with key type ${checker.typeToString(type)}`);
+        }
+        if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name) && node.name.text === "slug" && ts.isStringLiteral(node.initializer)) {
+          slugs.push(node.initializer.text);
+        }
+        if (ts.isIdentifier(node) && !inType(node)) {
+          const parent = node.parent;
+          // Names that declare something or name a member, rather than read a value.
+          const isName =
+            (parent.name === node && !ts.isShorthandPropertyAssignment(parent)) ||
+            parent.propertyName === node ||
+            parent.label === node ||
+            ts.isImportSpecifier(parent) ||
+            ts.isExportSpecifier(parent) ||
+            ts.isImportClause(parent) ||
+            ts.isNamespaceImport(parent);
+          if (!isName) {
+            let symbol = ts.isShorthandPropertyAssignment(parent)
+              ? checker.getShorthandAssignmentValueSymbol(parent)
+              : checker.getSymbolAtLocation(node);
+            if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol);
+            const decls = symbol?.declarations ?? [];
+            const files = decls.map((d) => resolve(d.getSourceFile().fileName));
+            const local = files.length > 0 && files.every((file) => file.startsWith(resolve(tmp, dir) + sep));
+            const fromAllowedModule = files.length > 0 && files.every((file) => allowedFiles.has(file));
+            const allowedGlobal = ALLOWED_GLOBALS.has(node.text) && (files.length === 0 || files.every(isLib));
+            if (!local && !fromAllowedModule && !allowedGlobal) report(node, `references ${node.text}${files.length ? "" : " (unresolved)"}`);
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(sf);
+
+      if (f.path.endsWith("/index.ts") && (slugs.length !== 1 || slugs[0] !== dir)) {
+        report(sf, `must declare slug: "${dir}" exactly once (found ${JSON.stringify(slugs)})`);
+      }
+    }
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
   }
-  if (/\bimport\s*"S\d+"/.test(code)) problems.push(`${path} has a side-effect import`);
-  for (const pattern of FORBIDDEN_CODE) {
-    if (pattern.test(code)) problems.push(`${path} uses ${pattern} (not allowed in lesson files)`);
-  }
-  return problems;
+  return [...new Set(violations)];
 }
+
+/* ------------------------------------------------------------------ */
+/* Rules                                                               */
+/* ------------------------------------------------------------------ */
 
 /**
  * @param {{ branch: string, changed: string[], baseCatalog: object[], headCatalog: unknown,
- *   headRegistry: string | undefined, baseLessonDirs: string[], readHead: (path: string) => string | undefined }} input
+ *   headRegistry: string | undefined, baseLessonDirs: string[],
+ *   readHead: (path: string) => string | undefined, readBase: (path: string) => string | undefined,
+ *   headMode: (path: string) => string | undefined, headLessonFiles: (dir: string) => string[] }} input
  * @returns {string[]} violations (empty = pass)
  */
-export function check({ branch, changed, baseCatalog, headCatalog, headRegistry, baseLessonDirs, readHead }) {
+export function check(input) {
+  const { branch, changed, baseCatalog, headCatalog, headRegistry, baseLessonDirs, readHead, readBase, headMode, headLessonFiles } = input;
   const v = [];
 
   // R1
@@ -212,33 +289,50 @@ export function check({ branch, changed, baseCatalog, headCatalog, headRegistry,
     if (!publishSlug || published.length !== 1 || published[0].slug !== publishSlug) {
       v.push(`publishes ${published.map((p) => p.slug).join(", ")}: publishing is only allowed in a publish/<slug> PR for exactly that lesson`);
     } else {
-      publishFiles = [
-        `src/content/lessons/${publishSlug}/index.ts`,
-        `src/content/lessons/${publishSlug}/review.ts`,
-        "src/content/catalog.json",
-        "content-pipeline/coverage.json",
-        "content-pipeline/candidates.json",
-        `content-pipeline/reviews/${publishSlug}.md`,
-      ];
+      const idx = `src/content/lessons/${publishSlug}/index.ts`;
+      const rev = `src/content/lessons/${publishSlug}/review.ts`;
+      publishFiles = [idx, rev, "src/content/catalog.json", "content-pipeline/coverage.json", "content-pipeline/candidates.json", `content-pipeline/reviews/${publishSlug}.md`];
       for (const path of changed) if (!publishFiles.includes(path)) v.push(`publish PR also changes ${path}`);
+      const expectedCatalog = baseCatalog.map((b) => (b.slug === publishSlug ? { ...b, status: "published" } : b));
+      if (JSON.stringify(expectedCatalog) !== JSON.stringify(head)) v.push("publish PR changes catalog.json beyond that lesson's status");
+      const baseIdx = readBase(idx);
+      if (changed.includes(idx) && (baseIdx === undefined || readHead(idx) !== baseIdx.replace('status: "draft"', 'status: "published"'))) {
+        v.push(`${idx} may only change its status line`);
+      }
+      const norm = (s) => (s ?? "").replace(/reviewedBy: "[^"\n]*"/, "R").replace(/reviewedOn: "[^"\n]*"/, "D");
+      if (changed.includes(rev) && norm(readHead(rev)) !== norm(readBase(rev))) v.push(`${rev} may only change reviewedBy/reviewedOn`);
     }
   }
 
   // R4 + R5
+  const dirsToAnalyze = new Set();
+  const report = new Set();
   for (const path of changed) {
     if (!path.startsWith("src/content/lessons/") || path === "src/content/lessons/registry.ts") continue;
     const parts = path.split("/");
     const dir = parts[3];
-    if (baseLessonDirs.includes(dir)) {
-      if (!publishFiles.includes(path)) v.push(`changes existing lesson file ${path}`);
+    const exists = readHead(path) !== undefined;
+    if (baseLessonDirs.includes(dir) && !publishFiles.includes(path)) {
+      v.push(`changes existing lesson file ${path}`);
       continue;
     }
     if (parts.length !== 5 || !path.endsWith(".ts") || !SLUG.test(dir)) {
-      v.push(`new lesson files must be flat .ts files in src/content/lessons/<slug>/ (${path})`);
+      v.push(`lesson files must be flat .ts files in src/content/lessons/<slug>/ (${path})`);
       continue;
     }
-    const source = readHead(path);
-    if (source !== undefined) v.push(...checkLessonSource(path, source));
+    if (!exists) continue; // a new lesson can't delete anything from main
+    const mode = headMode(path);
+    if (mode !== "100644") v.push(`${path} must be a regular file (git mode ${mode ?? "unknown"})`);
+    dirsToAnalyze.add(dir);
+    report.add(path);
+  }
+  if (dirsToAnalyze.size) {
+    const files = [...dirsToAnalyze].flatMap((dir) =>
+      headLessonFiles(dir)
+        .filter((p) => p.endsWith(".ts"))
+        .map((p) => ({ path: p, source: readHead(p) ?? "" })),
+    );
+    v.push(...analyzeLessonFiles(files, report));
   }
 
   // R6
@@ -254,13 +348,15 @@ export function check({ branch, changed, baseCatalog, headCatalog, headRegistry,
   return [...new Set(v)];
 }
 
+/* ------------------------------------------------------------------ */
+/* CLI                                                                 */
+/* ------------------------------------------------------------------ */
+
 function git(...args) {
-  return execFileSync("git", args, { encoding: "utf8" });
+  return execFileSync("git", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 }
 
-function main() {
-  const { HEAD_BRANCH: branch = "", BASE_SHA: base, HEAD_REF: head } = process.env;
-  if (!base || !head) throw new Error("BASE_SHA and HEAD_REF are required");
+export function runCheck({ branch, base, head }) {
   const show = (ref, path) => {
     try {
       return git("show", `${ref}:${path}`);
@@ -274,18 +370,35 @@ function main() {
   } catch {
     headCatalog = "not JSON";
   }
-  const violations = check({
+  const lsTree = (ref, path) =>
+    git("ls-tree", "-r", ref, "--", path)
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        const [meta, file] = line.split("\t");
+        return { mode: meta.split(" ")[0], file };
+      });
+  return check({
     branch,
     changed: git("diff", "--name-only", "--no-renames", `${base}...${head}`).split("\n").filter(Boolean),
     baseCatalog: JSON.parse(show(base, "src/content/catalog.json") ?? "[]"),
     headCatalog,
     headRegistry: show(head, "src/content/lessons/registry.ts"),
-    baseLessonDirs: git("ls-tree", "--name-only", `${base}`, "src/content/lessons/")
+    baseLessonDirs: git("ls-tree", "--name-only", base, "src/content/lessons/")
       .split("\n")
       .filter(Boolean)
       .map((p) => p.split("/").pop()),
     readHead: (path) => show(head, path),
+    readBase: (path) => show(base, path),
+    headMode: (path) => lsTree(head, path)[0]?.mode,
+    headLessonFiles: (dir) => lsTree(head, `src/content/lessons/${dir}/`).map((e) => e.file),
   });
+}
+
+function main() {
+  const { HEAD_BRANCH: branch = "", BASE_SHA: base, HEAD_REF: head } = process.env;
+  if (!base || !head) throw new Error("BASE_SHA and HEAD_REF are required");
+  const violations = runCheck({ branch, base, head });
   for (const msg of violations) console.log(`::error::${msg}`);
   if (violations.length) {
     console.log(`✖ ${violations.length} content-safety violation(s)`);

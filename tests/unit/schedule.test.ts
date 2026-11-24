@@ -317,12 +317,24 @@ describe("content:publish is human-only", () => {
 describe("content-safety CI check (every PR) and the local guard", async () => {
   const { findForbiddenPaths } = await import("@/content/schedule");
   const { renderRegistry: renderTs } = await import("@/content/pipeline");
-  const { check, renderRegistry, checkLessonSource, validateCatalog } = (await import("../../scripts/ci/content-safety.mjs")) as {
+  const { check, renderRegistry, analyzeLessonFiles, validateCatalog } = (await import("../../scripts/ci/content-safety.mjs")) as {
     check: (i: object) => string[];
     renderRegistry: (c: object[]) => string;
-    checkLessonSource: (p: string, s: string) => string[];
+    analyzeLessonFiles: (files: { path: string; source: string }[]) => string[];
     validateCatalog: (c: unknown) => string[];
   };
+  /** A fake PR head: path → source, with the git accessors check() needs. */
+  const tree = (files: Record<string, string>, base: Record<string, string> = {}) => ({
+    readHead: (path: string) => files[path],
+    readBase: (path: string) => base[path],
+    headMode: (path: string) => (path in files ? "100644" : undefined),
+    headLessonFiles: (dir: string) => Object.keys(files).filter((p) => p.startsWith(`src/content/lessons/${dir}/`)),
+  });
+  const NEW_LESSON = {
+    "src/content/lessons/new/en.ts": 'export const en = { title: "the review process, window and document" };',
+    "src/content/lessons/new/index.ts": 'import { en } from "./en";\nexport default { slug: "new", status: "draft", en };',
+  };
+  const lessonFile = (path: string, source: string) => analyzeLessonFiles([{ path, source }]);
   const base = [{ slug: "a", status: "published", createdOn: "2026-11-24" }];
   const head = [...base, { slug: "new", status: "draft", createdOn: "2026-11-25" }];
   const ok = {
@@ -331,7 +343,7 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
     headCatalog: head,
     headRegistry: renderRegistry(head),
     baseLessonDirs: ["a", "registry.ts"],
-    readHead: () => 'import type { LessonBody } from "@/content/schema";\nexport const en = { title: "the review process" };',
+    ...tree(NEW_LESSON),
     changed: ["src/content/catalog.json", "src/content/lessons/registry.ts", "src/content/lessons/new/en.ts", "src/content/lessons/new/index.ts", "content-pipeline/runs/2026-11-25-morning.json", "content-pipeline/coverage.json"],
   };
   const fails = (override: object, message: string) => expect(check({ ...ok, ...override }).join("\n")).toContain(message);
@@ -363,8 +375,17 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
       baseLessonDirs: ["a", "b", "registry.ts"],
       changed: ["src/content/catalog.json", "src/content/lessons/b/index.ts", "src/content/lessons/b/review.ts", "content-pipeline/coverage.json", "content-pipeline/reviews/b.md"],
     };
-    expect(check({ ...ok, ...pub })).toEqual([]);
-    expect(check({ ...ok, ...pub, changed: [...pub.changed, "src/app/page.tsx"] }).join("\n")).toContain("publish PR also changes src/app/page.tsx");
+    const idx = "src/content/lessons/b/index.ts";
+    const rev = "src/content/lessons/b/review.ts";
+    const baseFiles = { [idx]: 'export default { slug: "b", status: "draft" };', [rev]: 'export const review = { reviewedBy: "", reviewedOn: "2026-11-25" };' };
+    const headFiles = { [idx]: 'export default { slug: "b", status: "published" };', [rev]: 'export const review = { reviewedBy: "Khai PHAN", reviewedOn: "2026-11-26" };' };
+    expect(check({ ...ok, ...pub, ...tree(headFiles, baseFiles) })).toEqual([]);
+    expect(check({ ...ok, ...pub, ...tree(headFiles, baseFiles), changed: [...pub.changed, "src/app/page.tsx"] }).join("\n")).toContain("publish PR also changes src/app/page.tsx");
+    // The publish PR may only flip the status and fill reviewer/date.
+    const sneaky = { ...headFiles, [idx]: 'export default { slug: "b", status: "published", extra: 1 };' };
+    expect(check({ ...ok, ...pub, ...tree(sneaky, baseFiles) }).join("\n")).toContain("may only change its status line");
+    const sneakyReview = { ...headFiles, [rev]: 'export const review = { reviewedBy: "K", reviewedOn: "2026-11-26", claims: [] };' };
+    expect(check({ ...ok, ...pub, ...tree(sneakyReview, baseFiles) }).join("\n")).toContain("may only change reviewedBy/reviewedOn");
   });
 
   it.each([
@@ -375,7 +396,9 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
     ["an edit to an existing lesson (any branch)", { branch: "feature/typo", changed: ["src/content/lessons/a/en.ts"] }, "changes existing lesson file src/content/lessons/a/en.ts"],
     ["a rename out of an existing lesson (both paths listed with --no-renames)", { branch: "feature/x", changed: ["src/content/lessons/a/en.ts", "src/content/lessons/new/en.ts"] }, "changes existing lesson file"],
     ["nested files in a new lesson", { changed: [...ok.changed, "src/content/lessons/new/sub/x.ts"] }, "flat .ts files"],
-    ["unsafe code in a new lesson", { readHead: () => "export const x = process.env.SECRET;" }, "uses"],
+    ["unsafe code in a new lesson", tree({ ...NEW_LESSON, "src/content/lessons/new/en.ts": "export const en = /x/.source;" }), "regular expression"],
+    ["a new lesson claiming another lesson's slug", tree({ ...NEW_LESSON, "src/content/lessons/new/index.ts": 'export default { slug: "a" };' }), 'must declare slug: "new"'],
+    ["a symlink or executable lesson file", { headMode: (path: string) => (path.endsWith("en.ts") ? "120000" : "100644") }, "must be a regular file (git mode 120000)"],
     ["a scheduled run touching scripts or workflows", { changed: [...ok.changed, "scripts/content/publish.mts", ".github/workflows/content-safety.yml"] }, "scheduled runs may only add a new lesson"],
   ])("rejects %s", (_label, override, message) => fails(override, message));
 
@@ -383,11 +406,27 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
     expect(check({ ...ok, branch: "feat/x", changed: ["scripts/content/schedule.mts"], headCatalog: base, headRegistry: renderRegistry(base) })).toEqual([]);
   });
 
-  it("lesson source rules ignore prose but catch code", () => {
-    expect(checkLessonSource("x.ts", 'export const t = "the process, window and document";')).toEqual([]);
-    for (const src of ['await import("node:fs")', 'import x from "../other"', 'import "./side-effect"', "const f = ({})[\"constructor\"]", "const s = `${globalThis.fetch}`", 'const s = "unterminated']) {
-      expect(checkLessonSource("x.ts", src).length).toBeGreaterThan(0);
-    }
+  it("lesson files are parsed and type-checked against an allowlist: prose is fine, code escapes are not", () => {
+    const path = "src/content/lessons/x/visuals.ts";
+    expect(lessonFile(path, 'export const t = "the process, window, document, eval and constructor";')).toEqual([]);
+    expect(lessonFile(path, 'const C = { en: 1, fr: 2 } as const;\nexport const pick = (l: "en" | "fr", i: number) => [C[l]][i] + Math.max(1, Number("2"));')).toEqual([]);
+    const attacks: [string, string][] = [
+      ['export const f = import("node:fs");', ""],
+      ['import x from "../other"; export const y = x;', "not allowed"],
+      ['import "./side-effect";', "side-effect import"],
+      ["export const x = /a/.source;", "regular expression"],
+      ["export const f = (() => 1).constructor;", "accesses .constructor"],
+      ['export const f = (() => 1)["constructor"];', 'key type "constructor"'],
+      ['const k = ("constr" + "uctor") as "length"; export const f = [1][k];', "type assertion"],
+      ["const t = (s: TemplateStringsArray) => s; export const g = t`x`;", "tagged template"],
+      ["export const g = globalThis;", "references globalThis"],
+      ['export const g = eval("1");', "references eval"],
+      ["export const g = Object.getPrototypeOf([]);", "references Object"],
+      ['export const g = new Function("return 1");', "new Function"],
+      ["export const g = process.env;", "does not type-check"],
+      ['export const s = "unterminated', ""],
+    ];
+    for (const [src, message] of attacks) expect(lessonFile(path, src).join("\n"), src).toContain(message);
     expect(validateCatalog("nope")).toEqual(["catalog.json must be an array"]);
   });
 
@@ -397,9 +436,13 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
       .map((d) => `src/content/lessons/${d.name}`)
       .concat(["content-pipeline/template"]);
     for (const dir of dirs) {
-      for (const file of readdirSync(new URL(`../../${dir}/`, import.meta.url))) {
-        expect(checkLessonSource(`${dir}/${file}`, read(`${dir}/${file}`))).toEqual([]);
-      }
+      // The template becomes src/content/lessons/<slug>/ once scaffolded.
+      const slug = dir === "content-pipeline/template" ? "template-lesson" : dir.split("/").pop()!;
+      const files = readdirSync(new URL(`../../${dir}/`, import.meta.url)).map((file) => ({
+        path: `src/content/lessons/${slug}/${file}`,
+        source: read(`${dir}/${file}`).replaceAll("__SLUG__", slug),
+      }));
+      expect(analyzeLessonFiles(files), dir).toEqual([]);
     }
   });
 

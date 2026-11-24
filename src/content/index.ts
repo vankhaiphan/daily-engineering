@@ -11,6 +11,15 @@ import { CATALOG, isVisible } from "./catalog";
 import { REGISTERED_LESSONS } from "./lessons/registry";
 import type { Lesson } from "./schema";
 
+// The catalog decides visibility by slug, so every registered module must be the
+// lesson its catalog entry names. Fail the build instead of serving a mismatch.
+if (
+  REGISTERED_LESSONS.length !== CATALOG.length ||
+  REGISTERED_LESSONS.some((lesson, i) => lesson.slug !== CATALOG[i].slug)
+) {
+  throw new Error("Lesson registry does not match src/content/catalog.json (run npm run content:registry and check each lesson's slug)");
+}
+
 /** Every registered lesson, drafts included (validation and scripts). */
 export function listAllLessons(): readonly Lesson[] {
   return REGISTERED_LESSONS;
