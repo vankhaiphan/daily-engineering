@@ -5,7 +5,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { checkLessonQuality } from "@/content/quality";
+import { blockingReviewFlags, checkLessonQuality } from "@/content/quality";
 import { arg, fail, loadLessons, PATHS, positional, readCandidates, readCatalog, today, writeCandidates, writeCatalog, writeCoverage, writeRegistry } from "./lib.mts";
 
 const [slug] = positional();
@@ -18,7 +18,7 @@ if (lesson.status === "published") fail(`${slug} is already published`);
 
 const catalog = readCatalog();
 const report = checkLessonQuality(lesson, { lessons, catalog });
-const blocking = [...report.errors, ...report.reviewFlags.filter((f) => !f.startsWith("status is draft"))];
+const blocking = [...report.errors, ...blockingReviewFlags(report)];
 if (blocking.length) {
   for (const b of blocking) console.error(`  ✖ ${b}`);
   fail(`${slug} cannot be published until these are resolved`);

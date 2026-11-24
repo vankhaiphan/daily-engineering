@@ -34,6 +34,14 @@ export const QUALITY_RULES = {
   nearDuplicateSimilarity: 0.3,
 } as const;
 
+/** Informational flag on every draft. Publishing is what clears it, so it never blocks publishing. */
+export const DRAFT_FLAG = "status is draft: visible in dev/preview only until published";
+
+/** Review flags that must be resolved before a lesson can be published (everything except the draft marker). */
+export function blockingReviewFlags(report: QualityReport): string[] {
+  return report.reviewFlags.filter((flag) => flag !== DRAFT_FLAG);
+}
+
 const REQUIRED_KINDS: SectionKind[] = ["intro", "concept", "deep-dive", "tradeoffs", "quiz", "interview", "sources"];
 
 /* ---------------------------------------------------------------- */
@@ -236,7 +244,7 @@ export function checkLessonQuality(
   if (lesson.keywords.length < 4) errors.push("needs ≥ 4 keywords (used for duplicate detection)");
 
   // Publishing gate
-  if (lesson.status === "draft") reviewFlags.push("status is draft: visible in dev/preview only until published");
+  if (lesson.status === "draft") reviewFlags.push(DRAFT_FLAG);
   if (lesson.status === "published" && claims.some((c) => c.status === "needs-review")) {
     errors.push("published lesson still has claims that need review");
   }

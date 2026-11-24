@@ -2,12 +2,12 @@
  * Quality gates for lessons.
  *   npm run content:validate                 # every lesson
  *   npm run content:validate -- <slug>       # one lesson
- *   npm run content:validate -- <slug> --publish   # also fail on review flags
+ *   npm run content:validate -- <slug> --publish   # also fail on unresolved review flags
  * Exit code 1 when any error (or, with --publish, any review flag) remains.
  */
 import { CATALOG } from "@/content/catalog";
 import { validateCandidates } from "@/content/pipeline";
-import { checkLessonQuality } from "@/content/quality";
+import { blockingReviewFlags, checkLessonQuality } from "@/content/quality";
 import { flag, loadLessons, positional, readCandidates, readCatalog } from "./lib.mts";
 
 const lessons = await loadLessons();
@@ -35,7 +35,8 @@ if (JSON.stringify(catalog) !== JSON.stringify(CATALOG)) {
 
 for (const lesson of targets) {
   const report = checkLessonQuality(lesson, { lessons, catalog });
-  const ok = report.errors.length === 0 && (!publish || report.reviewFlags.length === 0);
+  // --publish: every evidence flag blocks; only the draft marker itself (cleared by publishing) does not.
+  const ok = report.errors.length === 0 && (!publish || blockingReviewFlags(report).length === 0);
   failed ||= !ok;
   console.log(`\n${ok ? "✔" : "✖"} ${lesson.slug} (${lesson.status})`);
   for (const e of report.errors) console.log(`  error   ${e}`);
