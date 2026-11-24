@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "timezone": "Europe/Paris",
+  "remote": "origin",
+  "baseBranch": "main",
+  "branchPrefix": "content/",
+  "weekdaysOnly": true,
+  "maxPendingLessons": 4,
+  "staleClaimHours": 6,
+  "slots": {
+    "morning": {
+      "label": "AI Discovery",
+      "localTime": "06:37",
+      "focus": "Claude Code, Codex, AI agents, multi-agent systems, AI SDLC, MCP, agent evaluations and emerging AI engineering practices",
+      "topics": ["claude-code", "ai-agents", "multi-agent-systems", "ai-sdlc", "mcp", "agent-evals"],
+      "seeds": ["claude.dev blog", "Anthropic Engineering", "OpenAI for Developers blog"]
+    },
+    "evening": {
+      "label": "Engineering Mastery",
+      "localTime": "17:37",
+      "focus": "System design, distributed systems, AWS, backend engineering, algorithms, reliability and technical interview preparation",
+      "topics": ["system-design", "distributed-systems", "aws", "backend", "algorithms", "reliability", "interview-prep"],
+      "seeds": ["AWS Builders' Library", "AWS Architecture Blog"]
+    }
+  }
+}

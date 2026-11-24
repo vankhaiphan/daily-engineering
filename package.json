@@ -20,7 +20,8 @@
     "content:registry": "tsx scripts/content/registry.mts",
     "content:report": "tsx scripts/content/report.mts",
     "content:publish": "tsx scripts/content/publish.mts",
-    "content:reject": "tsx scripts/content/reject.mts"
+    "content:reject": "tsx scripts/content/reject.mts",
+    "schedule": "tsx scripts/content/schedule.mts"
   },
   "dependencies": {
     "next": "16.4.6",
@@ -39,5 +40,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

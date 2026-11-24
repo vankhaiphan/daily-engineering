@@ -21,12 +21,13 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
 
 3. **Plan before writing.** In a short note (in the chat, not a file): the learner's "aha", 8–12 sections, which 1–3 visuals and why (see the decision table in `references/visualizations.md`), 3–4 quiz questions with misconceptions they target, and the interview pitch.
 
-4. **Scaffold.** `npm run content:new -- <slug> --candidate <candidate-id>`. This registers a draft, updates the catalog and registry, and marks the candidate `selected`.
+4. **Scaffold.** `npm run content:new -- <slug> --candidate <candidate-id>` (scheduled runs add `--date <slot date>`). This registers a draft, updates the catalog and registry, and marks the candidate `selected`.
 
 5. **Write the lesson files** (replace every TODO):
    - `sources.ts`: verified metadata; `publishedOn: null` when not shown (primary sources must have a date).
    - `review.ts`: every factual claim with ≤ 300-char verbatim evidence; `derived` for your own math; `needs-review` with a note for anything unconfirmed.
    - `visuals.ts`: specs only (data, no JSX). Compute chart values from formulas or a seeded simulation in the same file, and export the helpers so unit tests can check them.
+   - Lesson files are plain data and arithmetic, checked by CI (`scripts/ci/content-safety.mjs`): import only `@/content/schema`, `@/lib/i18n/config`, `@/lib/format` or sibling files; built-ins only `Math`, `Array`, `Number`, `String`, `Boolean`, `Map`, `Set`, `Error`; give generics explicitly (`new Array<number>(n)`, `new Map<string, number>()`), since `any` is rejected; no type assertions except `as const`, no regex literals, classes or `@ts-` comments; bracket keys must be numbers or fixed string literals. `index.ts` keeps `slug: "<folder name>"`.
    - `code.ts` (if any): code identical across languages; comments localized via `codeFor(locale)`.
    - `en.ts` first, then `vi.ts` and `fr.ts` with the **same section ids, block order and quiz answer keys**. Translate naturally (see `references/authoring.md`); quotes stay verbatim English with a `translation`.
    - `index.ts`: topics, ≥ 4 keywords, `status: "draft"`, provenance.
@@ -37,11 +38,11 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
 
 8. **Write the review report.** `npm run content:report -- <slug>` → `content-pipeline/reviews/<slug>.md`.
 
-9. **Prepare the git change.** On a `content/<slug>` branch (or the branch the user named), commit only the lesson folder, catalog/registry/coverage, candidates, review report, and the test path list. Don't touch app code in a content change unless a renderer bug blocks the lesson (then make it a separate commit and say so). Don't push, merge or deploy unless the user asks. Summarize for the user: source, selection reason, visuals, word counts, and **every review flag** they must resolve.
+9. **Prepare the git change.** (Scheduled runs skip this step: `npm run schedule -- finish` and `pr` handle the branch, commit, push and draft PR; see `.claude/skills/scheduled-lesson`.) On a `content/<slug>` branch (or the branch the user named), commit only the lesson folder, catalog/registry/coverage, candidates, review report, and the test path list. Don't touch app code in a content change unless a renderer bug blocks the lesson (then make it a separate commit and say so). Don't push, merge or deploy unless the user asks. Summarize for the user: source, selection reason, visuals, word counts, and **every review flag** they must resolve.
 
 ## Regenerating or rejecting
 - To redo a lesson in place: keep the slug, fix the files, re-run steps 6–9.
 - To reject a draft: `npm run content:reject -- <slug> --reason "<why>"`. It removes the files and records the reason on the candidate so it isn't picked again by accident.
 
 ## Not your job here
-Publishing (a human runs `npm run content:publish -- <slug> --reviewer "<name>"` after review), scheduling, deployment.
+Publishing (human-only, in an interactive terminal on a `publish/<slug>` branch after the draft is merged; `content:publish` refuses in agent sessions), scheduling, deployment.

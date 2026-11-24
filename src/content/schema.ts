@@ -259,7 +259,11 @@ export type Topic =
   | "distributed-systems"
   | "aws"
   | "backend"
-  | "algorithms";
+  | "algorithms"
+  | "mcp"
+  | "agent-evals"
+  | "reliability"
+  | "interview-prep";
 
 export type ClaimStatus =
   /** Checked against the cited source; `evidence` holds a short quote. */

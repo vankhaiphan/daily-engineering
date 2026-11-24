@@ -1,0 +1,4 @@
+# Every change needs the repository owner's approval when the main ruleset has
+# "Require review from Code Owners" enabled. Scheduled runs (bots) can't satisfy
+# this, so they can't merge anything, including code PRs under any branch name.
+* @vankhaiphan

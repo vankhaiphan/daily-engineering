@@ -1,12 +1,30 @@
 /**
- * Approve a reviewed draft: runs the publish gate, then flips status to
- * "published" in the lesson and the catalog.
+ * Approve a reviewed draft: runs the publish gate, asks the human to retype
+ * the slug, then flips status to "published" in the lesson and the catalog.
  *   npm run content:publish -- <slug> --reviewer "<name>"
+ * Human-only: refuses without an interactive terminal and in cloud/scheduled sessions.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { blockingReviewFlags, checkLessonQuality } from "@/content/quality";
 import { arg, fail, loadLessons, PATHS, positional, readCandidates, readCatalog, today, writeCandidates, writeCatalog, writeCoverage, writeRegistry } from "./lib.mts";
+
+// Publishing is a human decision. Refuse in any cloud or scheduled session,
+// whatever command form was used to start this script.
+const scheduledMarkers = ["DAILY_ENGINEERING_SCHEDULED", "CLAUDE_CODE_REMOTE"].filter((k) => {
+  const v = process.env[k];
+  return v !== undefined && v !== "" && v !== "0" && v !== "false";
+});
+if (scheduledMarkers.length) {
+  fail(`content:publish is human-only and refuses to run in a cloud/scheduled session (${scheduledMarkers.join(", ")} set). Publish from your own machine after review.`);
+}
+
+// Fail closed: environment variables can be cleared, so also require a human at
+// an interactive terminal (agent tool calls are not TTYs) who retypes the slug.
+if (!process.stdin.isTTY || !process.stdout.isTTY) {
+  fail("content:publish must be run by a human in an interactive terminal (it asks you to confirm the slug).");
+}
 
 const [slug] = positional();
 const reviewer = arg("reviewer");
@@ -23,6 +41,11 @@ if (blocking.length) {
   for (const b of blocking) console.error(`  ✖ ${b}`);
   fail(`${slug} cannot be published until these are resolved`);
 }
+
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+const typed = (await rl.question(`Publish "${lesson.content.en.title}" as reviewer ${reviewer}? Type the slug to confirm: `)).trim();
+rl.close();
+if (typed !== slug) fail("confirmation did not match; nothing was changed");
 
 const indexPath = join(PATHS.lessons, slug, "index.ts");
 const source = readFileSync(indexPath, "utf8");

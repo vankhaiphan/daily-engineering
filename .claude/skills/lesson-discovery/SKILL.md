@@ -21,6 +21,7 @@ Goal: a ranked, verified shortlist of articles in `content-pipeline/candidates.j
 4. Open the top 3–5 articles. Skim structure and depth; note concrete numbers worth teaching.
 5. Score 1–5 each (see rubric) and add or update entries in `candidates.json` (`total: 0`), then run:
    `npm run content:candidates -- --rescore` (computes totals and validates the file).
+   For every candidate also set `track` (`"morning"` for AI engineering topics, `"evening"` for system design / backend / AWS / algorithms, see `content-pipeline/schedule.json`) and 3–6 lower-case `keywords` (used to detect duplicates against lessons and pending scheduled runs).
 6. Set `status`: `selected` (will be generated now, needs `lessonSlug`), `shortlisted` (good, later), `rejected` (with reason). Aim for a mix: recent AI engineering and evergreen backend/system design.
 7. Report the ranked list and your recommendation. Don't generate lessons unless asked: that is the `lesson-generation` skill.
 
