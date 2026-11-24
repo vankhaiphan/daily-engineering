@@ -8,6 +8,16 @@ import { join } from "node:path";
 import { blockingReviewFlags, checkLessonQuality } from "@/content/quality";
 import { arg, fail, loadLessons, PATHS, positional, readCandidates, readCatalog, today, writeCandidates, writeCatalog, writeCoverage, writeRegistry } from "./lib.mts";
 
+// Publishing is a human decision. Refuse in any cloud or scheduled session,
+// whatever command form was used to start this script.
+const scheduledMarkers = ["DAILY_ENGINEERING_SCHEDULED", "CLAUDE_CODE_REMOTE"].filter((k) => {
+  const v = process.env[k];
+  return v !== undefined && v !== "" && v !== "0" && v !== "false";
+});
+if (scheduledMarkers.length) {
+  fail(`content:publish is human-only and refuses to run in a cloud/scheduled session (${scheduledMarkers.join(", ")} set). Publish from your own machine after review.`);
+}
+
 const [slug] = positional();
 const reviewer = arg("reviewer");
 if (!slug || !reviewer) fail('usage: npm run content:publish -- <slug> --reviewer "<name>"');

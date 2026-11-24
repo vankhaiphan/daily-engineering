@@ -48,7 +48,7 @@ export function arg(name: string): string | undefined {
 }
 
 export const flag = (name: string) => process.argv.includes(`--${name}`);
-const VALUE_FLAGS = new Set(["--url", "--title", "--keywords", "--reason", "--candidate", "--reviewer"]);
+const VALUE_FLAGS = new Set(["--url", "--title", "--keywords", "--reason", "--candidate", "--reviewer", "--date", "--slot", "--now", "--slug", "--blocker"]);
 /** Arguments that are neither flags nor the value of a value-taking flag. */
 export const positional = () =>
   process.argv.slice(2).filter((a, i, all) => !a.startsWith("--") && !VALUE_FLAGS.has(all[i - 1] ?? ""));

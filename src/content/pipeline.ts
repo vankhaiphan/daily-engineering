@@ -30,6 +30,10 @@ export interface Candidate {
   /** Where it was found (index page URL, search, user request). */
   discoveredVia: string;
   kind: "recent" | "evergreen";
+  /** Scheduled track this candidate belongs to (content-pipeline/schedule.json). */
+  track?: "morning" | "evening";
+  /** Lower-case concepts for duplicate detection against lessons and pending runs. */
+  keywords?: string[];
   scores: CandidateScores;
   engagementNote?: string;
   /** Computed by `npm run content:candidates -- --rescore`; do not hand-edit. */
@@ -88,6 +92,7 @@ export function validateCandidates(file: CandidateFile, lessons: readonly Lesson
     if (c.total !== scoreCandidate(c.scores)) errors.push(`${p}: total ${c.total} ≠ computed ${scoreCandidate(c.scores)} (run --rescore)`);
     if (c.publishedOn !== null && !/^\d{4}-\d{2}-\d{2}$/.test(c.publishedOn)) errors.push(`${p}: publishedOn must be YYYY-MM-DD or null`);
     if (!c.decision.trim()) errors.push(`${p}: decision reason is required`);
+    if (c.track !== undefined && c.track !== "morning" && c.track !== "evening") errors.push(`${p}: track must be morning or evening`);
     if ((c.status === "selected" || c.status === "published") && !c.lessonSlug) errors.push(`${p}: ${c.status} candidates need a lessonSlug`);
     if (c.status === "published" && c.lessonSlug && !slugs.has(c.lessonSlug)) errors.push(`${p}: lesson ${c.lessonSlug} not found`);
   }

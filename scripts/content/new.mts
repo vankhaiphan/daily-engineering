@@ -6,10 +6,15 @@
  */
 import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { arg, fail, PATHS, positional, readCandidates, readCatalog, today, writeCandidates, writeCatalog, writeCoverage, writeRegistry } from "./lib.mts";
+import { arg, fail, PATHS, positional, readCandidates, readCatalog, today as utcToday, writeCandidates, writeCatalog, writeCoverage, writeRegistry } from "./lib.mts";
+
+// Scheduled runs pass --date (their Europe/Paris slot date); default: today (UTC).
+const dateArg = arg("date");
+if (dateArg && !/^\d{4}-\d{2}-\d{2}$/.test(dateArg)) fail("--date must be YYYY-MM-DD");
+const today = () => dateArg ?? utcToday();
 
 const [slug] = positional();
-if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) fail("usage: npm run content:new -- <kebab-case-slug> [--candidate <id>]");
+if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) fail("usage: npm run content:new -- <kebab-case-slug> [--candidate <id>] [--date YYYY-MM-DD]");
 const dir = join(PATHS.lessons, slug);
 if (existsSync(dir)) fail(`${dir} already exists`);
 
