@@ -2,6 +2,32 @@
   "version": 1,
   "lessons": [
     {
+      "slug": "agent-evals",
+      "status": "draft",
+      "createdOn": "2026-11-24",
+      "title": "Evals for AI Agents: How to Know Your Agent Really Works",
+      "topics": [
+        "ai-agents",
+        "ai-sdlc",
+        "claude-code"
+      ],
+      "keywords": [
+        "agent evaluation",
+        "evals",
+        "graders",
+        "llm judge",
+        "pass@k",
+        "pass^k",
+        "capability evals",
+        "regression evals",
+        "transcripts",
+        "non-determinism"
+      ],
+      "sources": [
+        "anthropic.com/article/demystifying-evals-for-ai-agents"
+      ]
+    },
+    {
       "slug": "building-effective-agents",
       "status": "published",
       "createdOn": "2026-11-24",
@@ -27,6 +53,34 @@
       "sources": [
         "anthropic.com/article/building-effective-agents",
         "anthropic.com/article/multi-agent-research-system"
+      ]
+    },
+    {
+      "slug": "timeouts-retries-backoff",
+      "status": "draft",
+      "createdOn": "2026-11-24",
+      "title": "Timeouts, Retries and Backoff with Jitter: Surviving Partial Failure",
+      "topics": [
+        "distributed-systems",
+        "backend",
+        "aws",
+        "system-design"
+      ],
+      "keywords": [
+        "timeouts",
+        "retries",
+        "exponential backoff",
+        "jitter",
+        "retry amplification",
+        "token bucket",
+        "idempotency",
+        "idempotency key",
+        "circuit breaker",
+        "partial failure"
+      ],
+      "sources": [
+        "aws-builders-library/timeouts-retries-and-backoff-with-jitter",
+        "aws-builders-library/making-retries-safe-with-idempotent-apis"
       ]
     }
   ]

@@ -1,4 +1,278 @@
 {
   "version": 1,
-  "candidates": []
+  "candidates": [
+    {
+      "id": "2026-11-24-anthropic-demystifying-evals",
+      "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+      "title": "Demystifying evals for AI agents",
+      "publisher": "Anthropic Engineering",
+      "authors": [
+        "Mikaela Grace",
+        "Jeremy Hadfield",
+        "Rodrigo Olivares",
+        "Jiri De Jonghe"
+      ],
+      "publishedOn": "2026-01-09",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://www.anthropic.com/engineering (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 5,
+        "educationalDepth": 5,
+        "credibility": 5,
+        "novelty": 5,
+        "careerValue": 5,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the page; not scored.",
+      "total": 100,
+      "status": "selected",
+      "decision": "Selected (A, recent AI engineering): complete vocabulary (task, trial, grader, transcript), grader trade-offs, pass@k vs pass^k with exact math for an interactive chart, and a practical roadmap. No overlap with the existing workflows-vs-agents lesson. High interview value for AI/platform roles.",
+      "lessonSlug": "agent-evals"
+    },
+    {
+      "id": "2026-11-24-claudedev-verification",
+      "url": "https://claude.dev/blog/how-the-claude-code-team-thinks-about-verification/",
+      "title": "How the Claude Code team thinks about verification",
+      "publisher": "claude.dev",
+      "authors": [
+        "Addy Osmani"
+      ],
+      "publishedOn": "2026-11-16",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://claude.dev (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 5,
+        "educationalDepth": 4,
+        "credibility": 5,
+        "novelty": 3,
+        "careerValue": 4,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the page; not scored.",
+      "total": 83,
+      "status": "shortlisted",
+      "decision": "Shortlisted: freshest Claude Code article and strong on test types (E2E, property, differential) and verification gates. Not chosen today: overlaps the evals lesson selected in this run, and several headline numbers are internal results with a single source. Good next pick as a 'verification loops' lesson that builds on agent-evals."
+    },
+    {
+      "id": "2026-11-24-anthropic-context-engineering",
+      "url": "https://www.anthropic.com/research/effective-context-engineering-for-ai-agents",
+      "title": "Effective context engineering for AI agents",
+      "publisher": "Anthropic Engineering",
+      "authors": [],
+      "publishedOn": "2025-09-29",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://www.anthropic.com/engineering (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 5,
+        "educationalDepth": 4,
+        "credibility": 5,
+        "novelty": 5,
+        "careerValue": 5,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the index; article not opened in this run.",
+      "total": 94,
+      "status": "shortlisted",
+      "decision": "Shortlisted: high-value AI engineering topic with no overlap. Only one AI lesson per run; article body not yet read, so depth is provisional."
+    },
+    {
+      "id": "2026-11-24-anthropic-long-running-harnesses",
+      "url": "https://www.anthropic.com/research/effective-harnesses-for-long-running-agents",
+      "title": "Effective harnesses for long-running agents",
+      "publisher": "Anthropic Engineering",
+      "authors": [],
+      "publishedOn": "2025-11-26",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://www.anthropic.com/engineering (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 4,
+        "educationalDepth": 4,
+        "credibility": 5,
+        "novelty": 4,
+        "careerValue": 4,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the index; article not opened in this run.",
+      "total": 80,
+      "status": "shortlisted",
+      "decision": "Shortlisted: relevant to Claude Code style agents; article not yet read."
+    },
+    {
+      "id": "2026-11-24-anthropic-code-execution-mcp",
+      "url": "https://www.anthropic.com/research/code-execution-with-mcp",
+      "title": "Code execution with MCP: Building more efficient agents",
+      "publisher": "Anthropic Engineering",
+      "authors": [],
+      "publishedOn": "2025-11-04",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://www.anthropic.com/engineering (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 4,
+        "educationalDepth": 4,
+        "credibility": 5,
+        "novelty": 4,
+        "careerValue": 3,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the index; article not opened in this run.",
+      "total": 76,
+      "status": "shortlisted",
+      "decision": "Shortlisted: good fit for a token-flow visualization; lower interview value than evals or context engineering."
+    },
+    {
+      "id": "2026-11-24-anthropic-multi-agent-research",
+      "url": "https://www.anthropic.com/research/multi-agent-research-system",
+      "title": "How we built our multi-agent research system",
+      "publisher": "Anthropic Engineering",
+      "authors": [
+        "Jeremy Hadfield",
+        "Barry Zhang",
+        "Kenneth Lien",
+        "Florian Scholz",
+        "Jeremy Fox",
+        "Daniel Ford"
+      ],
+      "publishedOn": "2025-06-13",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://www.anthropic.com/engineering (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 5,
+        "educationalDepth": 5,
+        "credibility": 5,
+        "novelty": 2,
+        "careerValue": 4,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the page; not scored.",
+      "total": 85,
+      "status": "rejected",
+      "decision": "Rejected (near-duplicate): already cited as a supporting source in building-effective-agents (content:dedupe flags it). Revisit only as a dedicated multi-agent deep dive."
+    },
+    {
+      "id": "2026-11-24-claudedev-code-review",
+      "url": "https://claude.dev/blog/solving-code-review-at-anthropic/",
+      "title": "How the Claude Code team does code review",
+      "publisher": "claude.dev",
+      "authors": [],
+      "publishedOn": "2026-10-15",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://claude.dev (index)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 4,
+        "educationalDepth": 4,
+        "credibility": 5,
+        "novelty": 3,
+        "careerValue": 4,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the index; article not opened in this run.",
+      "total": 76,
+      "status": "shortlisted",
+      "decision": "Shortlisted: AI SDLC topic; pair with the verification article in a future run rather than covering both separately."
+    },
+    {
+      "id": "2026-11-24-aws-timeouts-retries-jitter",
+      "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+      "title": "Timeouts, retries, and backoff with jitter",
+      "publisher": "AWS Builders' Library",
+      "authors": [
+        "Marc"
+      ],
+      "publishedOn": "2019-12-05",
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "Known Builders' Library article (index renders client-side); URL redirects to builder.aws.com/content/3EumjoZascWd1oZiEgL8ORlv3qE/…",
+      "kind": "evergreen",
+      "scores": {
+        "technicalRelevance": 5,
+        "educationalDepth": 5,
+        "credibility": 5,
+        "novelty": 5,
+        "careerValue": 5,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the page; not scored.",
+      "total": 100,
+      "status": "selected",
+      "decision": "Selected (B, evergreen distributed systems): a classic system-design interview topic, written from Amazon's operational experience, with exact numbers (0.1% false timeouts, 243× retry amplification) that suit a sequence diagram and interactive charts. No overlap with existing lessons.",
+      "lessonSlug": "timeouts-retries-backoff"
+    },
+    {
+      "id": "2026-11-24-aws-idempotent-apis",
+      "url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+      "title": "Making retries safe with idempotent APIs",
+      "publisher": "AWS Builders' Library",
+      "authors": [
+        "Malcolm Featonby"
+      ],
+      "publishedOn": null,
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "Linked topic from the timeouts article; URL opened directly",
+      "kind": "evergreen",
+      "scores": {
+        "technicalRelevance": 5,
+        "educationalDepth": 4,
+        "credibility": 5,
+        "novelty": 3,
+        "careerValue": 5,
+        "engagement": null
+      },
+      "engagementNote": "No public engagement metrics on the page; not scored.",
+      "total": 86,
+      "status": "rejected",
+      "decision": "Rejected as a standalone lesson: the page shows no publication date (a primary source needs one), and it is covered as the supporting source for idempotency in timeouts-retries-backoff."
+    },
+    {
+      "id": "2026-11-24-openai-eval-skills",
+      "url": "https://developers.openai.com/blog/eval-skills",
+      "title": "Testing Agent Skills Systematically with Evals",
+      "publisher": "OpenAI for Developers",
+      "authors": [],
+      "publishedOn": null,
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://developers.openai.com/blog (index, no dates shown)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 4,
+        "educationalDepth": 3,
+        "credibility": 5,
+        "novelty": 2,
+        "careerValue": 4,
+        "engagement": null
+      },
+      "engagementNote": "Index shows no engagement data; article not opened.",
+      "total": 66,
+      "status": "rejected",
+      "decision": "Rejected for this run: near-duplicate of the agent-evals lesson; no date on the index (would need the article page). Could become a supporting source for a later evals follow-up."
+    },
+    {
+      "id": "2026-11-24-openai-provider-failover",
+      "url": "https://developers.openai.com/blog/designing-failover-across-openai-model-providers",
+      "title": "Designing failover across OpenAI model providers",
+      "publisher": "OpenAI for Developers",
+      "authors": [],
+      "publishedOn": null,
+      "discoveredOn": "2026-11-24",
+      "discoveredVia": "https://developers.openai.com/blog (index, no dates shown)",
+      "kind": "recent",
+      "scores": {
+        "technicalRelevance": 4,
+        "educationalDepth": 3,
+        "credibility": 4,
+        "novelty": 4,
+        "careerValue": 4,
+        "engagement": null
+      },
+      "engagementNote": "Index shows no engagement data; article not opened.",
+      "total": 69,
+      "status": "shortlisted",
+      "decision": "Shortlisted: reliability topic that would build on timeouts-retries-backoff; open the article to confirm its date and depth first."
+    }
+  ]
 }

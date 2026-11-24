@@ -4,8 +4,14 @@ export const LESSON = "/en/lessons/building-effective-agents";
 
 /** Draft lessons are visible locally and on previews, not on the production site. */
 export const DRAFTS_VISIBLE = !process.env.E2E_BASE_URL || process.env.E2E_DRAFTS === "true";
-// Read + explore paths of draft lessons (the lesson-generation skill adds them).
-export const DRAFT_PATHS: string[] = [];
+export const DRAFT_PATHS = DRAFTS_VISIBLE
+  ? [
+      "/lessons/agent-evals",
+      "/lessons/agent-evals/explore",
+      "/lessons/timeouts-retries-backoff",
+      "/lessons/timeouts-retries-backoff/explore",
+    ]
+  : [];
 
 /** Fails if the page can scroll sideways (the classic mobile layout bug). */
 export async function expectNoHorizontalOverflow(page: Page) {
