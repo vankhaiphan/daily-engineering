@@ -27,6 +27,7 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
    - `sources.ts`: verified metadata; `publishedOn: null` when not shown (primary sources must have a date).
    - `review.ts`: every factual claim with ≤ 300-char verbatim evidence; `derived` for your own math; `needs-review` with a note for anything unconfirmed.
    - `visuals.ts`: specs only (data, no JSX). Compute chart values from formulas or a seeded simulation in the same file, and export the helpers so unit tests can check them.
+   - Lesson files are plain data and arithmetic, checked by CI (`scripts/ci/content-safety.mjs`): import only `@/content/schema`, `@/lib/i18n/config`, `@/lib/format` or sibling files; built-ins only `Math`, `Array`, `Number`, `String`, `Boolean`, `Map`, `Set`, `Error`; give generics explicitly (`new Array<number>(n)`, `new Map<string, number>()`), since `any` is rejected; no type assertions except `as const`, no regex literals, classes or `@ts-` comments; bracket keys must be numbers or fixed string literals. `index.ts` keeps `slug: "<folder name>"`.
    - `code.ts` (if any): code identical across languages; comments localized via `codeFor(locale)`.
    - `en.ts` first, then `vi.ts` and `fr.ts` with the **same section ids, block order and quiz answer keys**. Translate naturally (see `references/authoring.md`); quotes stay verbatim English with a `translation`.
    - `index.ts`: topics, ≥ 4 keywords, `status: "draft"`, provenance.

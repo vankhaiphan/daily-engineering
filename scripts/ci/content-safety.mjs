@@ -146,6 +146,9 @@ export function analyzeLessonFiles(files, only) {
         const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
         violations.push(`${f.path}:${line + 1} ${msg}`);
       };
+      // Directives that silence or redirect the checker would let types lie.
+      if (/@ts-(?:ignore|expect-error|nocheck)/.test(f.source)) report(sf, "contains a @ts-ignore/@ts-expect-error/@ts-nocheck directive");
+      if (/^\s*\/\/\/\s*</m.test(f.source)) report(sf, "contains a triple-slash directive");
       for (const d of [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]) {
         violations.push(`${f.path} does not type-check: ${ts.flattenDiagnosticMessageText(d.messageText, " ")}`);
       }
@@ -179,7 +182,9 @@ export function analyzeLessonFiles(files, only) {
           case ts.SyntaxKind.MetaProperty:
           case ts.SyntaxKind.ModuleDeclaration:
           case ts.SyntaxKind.TypeAssertionExpression:
-            report(node, `uses ${ts.SyntaxKind[node.kind]}`);
+          case ts.SyntaxKind.TypePredicate: // `x is T` / `asserts x` can narrow a value to a type it doesn't have
+          case ts.SyntaxKind.AnyKeyword:
+            report(node, node.kind === ts.SyntaxKind.TypePredicate ? "uses a type predicate" : `uses ${ts.SyntaxKind[node.kind]}`);
             break;
           default:
             break;
@@ -196,6 +201,21 @@ export function analyzeLessonFiles(files, only) {
           report(node, `uses new ${node.expression.getText(sf)}`);
         }
         if (ts.isPropertyAccessExpression(node) && FORBIDDEN_MEMBERS.has(node.name.text)) report(node, `accesses .${node.name.text}`);
+        // `declare` names something that exists only at runtime (e.g. a global), not in this file.
+        if (ts.canHaveModifiers(node) && ts.getModifiers(node)?.some((m) => m.kind === ts.SyntaxKind.DeclareKeyword)) {
+          report(node, "uses declare");
+        }
+        // Overload signatures can promise a return type the implementation doesn't keep.
+        if ((ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) && !node.body) report(node, "declares an overload or bodiless function");
+        // Values typed `any` (e.g. from an untyped `new Map()`) can be assigned to any literal type.
+        const valueRead =
+          ts.isCallExpression(node) ||
+          ts.isNewExpression(node) ||
+          ts.isElementAccessExpression(node) ||
+          ts.isPropertyAccessExpression(node) ||
+          (ts.isIdentifier(node) && !inType(node) && node.parent.name !== node && node.parent.propertyName !== node &&
+            !ts.isImportSpecifier(node.parent) && !ts.isImportClause(node.parent) && !ts.isNamespaceImport(node.parent) && !ts.isExportSpecifier(node.parent));
+        if (valueRead && checker.getTypeAtLocation(node).flags & ts.TypeFlags.Any) report(node, "has a value of type any");
         // `x as T` can lie to the checker; only `as const` is allowed.
         if (ts.isAsExpression(node) && !(ts.isTypeReferenceNode(node.type) && node.type.typeName.getText(sf) === "const")) {
           report(node, "uses a type assertion (only `as const` is allowed)");
@@ -316,7 +336,7 @@ export function check(input) {
       v.push(`changes existing lesson file ${path}`);
       continue;
     }
-    if (parts.length !== 5 || !path.endsWith(".ts") || !SLUG.test(dir)) {
+    if (parts.length !== 5 || !/^[a-z0-9]+(?:-[a-z0-9]+)*\.ts$/.test(parts[4]) || !SLUG.test(dir)) {
       v.push(`lesson files must be flat .ts files in src/content/lessons/<slug>/ (${path})`);
       continue;
     }

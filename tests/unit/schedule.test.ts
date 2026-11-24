@@ -425,7 +425,16 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
       ['export const g = new Function("return 1");', "new Function"],
       ["export const g = process.env;", "does not type-check"],
       ['export const s = "unterminated', ""],
+      // Ways to make the checker believe a wrong type (so bracket keys can't be trusted otherwise).
+      ['declare const fetch: (u: string) => unknown; export const g = fetch("x");', "uses declare"],
+      ['// @ts-ignore\nconst k: "length" = "constr" + "uctor"; export const f = [1][k];', "@ts-ignore"],
+      ['/// <reference types="node" />\nexport const f = 1;', "triple-slash"],
+      ['const isL = (x: string): x is "length" => true; const k: string = "c"; export const f = isL(k) ? [1][k] : 0;', "type predicate"],
+      ['function f(x: string): "length"; function f(x: string) { return x; } export const g = [1][f("constructor")];', "overload"],
+      ['const m = new Map(); m.set(1, "constructor"); const k: "length" = m.get(1); export const g = [1][k];', "type any"],
+      ['const k: any = "constructor"; export const g = [1][k];', "AnyKeyword"],
     ];
+    expect(lessonFile(path, "export const xs = new Array<number>(3).fill(0).map((v, i) => v + i);")).toEqual([]);
     for (const [src, message] of attacks) expect(lessonFile(path, src).join("\n"), src).toContain(message);
     expect(validateCatalog("nope")).toEqual(["catalog.json must be an array"]);
   });
@@ -442,7 +451,10 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
         path: `src/content/lessons/${slug}/${file}`,
         source: read(`${dir}/${file}`).replaceAll("__SLUG__", slug),
       }));
-      expect(analyzeLessonFiles(files), dir).toEqual([]);
+      // Known: a published lesson predating the any-rule builds an untyped `new Array(n)`. Existing lessons
+      // can't change (R4), so it is never re-checked; new lessons must write `new Array<number>(n)`.
+      const known = dir.endsWith("/timeouts-retries-backoff") ? ["src/content/lessons/timeouts-retries-backoff/visuals.ts:361 has a value of type any"] : [];
+      expect(analyzeLessonFiles(files), dir).toEqual(known);
     }
   });
 
