@@ -2,6 +2,7 @@
 
 import { IconExternal } from "@/components/icons";
 import { useLesson } from "@/components/lesson/LessonContext";
+import { SourceDate } from "@/components/SourceDate";
 import { formatDate } from "@/lib/format";
 
 export function SourcesBlock() {
@@ -18,7 +19,7 @@ export function SourcesBlock() {
             {source.publisher} · {ui.sources.by} {source.authors.join(", ")}
           </p>
           <p className="mt-1 text-[0.85em] text-ink-3">
-            {ui.sources.published} <time dateTime={source.publishedOn}>{formatDate(source.publishedOn, locale)}</time> ·{" "}
+            {ui.sources.published} <SourceDate iso={source.publishedOn} locale={locale} fallback={ui.sources.noDate} /> ·{" "}
             {ui.sources.accessed} <time dateTime={source.accessedOn}>{formatDate(source.accessedOn, locale)}</time>
           </p>
           {source.note ? <p className="mt-2 text-[0.9em] text-ink-2">{source.note[locale]}</p> : null}

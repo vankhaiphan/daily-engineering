@@ -3,7 +3,7 @@
 import type { Block } from "@/content/schema";
 import { InlineText } from "@/components/InlineText";
 import { useLesson } from "@/components/lesson/LessonContext";
-import { FlowExplorer } from "./FlowExplorer";
+import { VisualRenderer } from "@/components/visuals/VisualRenderer";
 import { InterviewBlock } from "./InterviewBlock";
 import { QuizBlock } from "./QuizBlock";
 import { SourcesBlock } from "./SourcesBlock";
@@ -145,7 +145,7 @@ export function BlockView({ block, blockKey }: { block: Block; blockKey: string 
       const spec = interactives[block.ref];
       return spec ? (
         <div {...keyProps}>
-          <FlowExplorer spec={spec} />
+          <VisualRenderer spec={spec} />
         </div>
       ) : null;
     }

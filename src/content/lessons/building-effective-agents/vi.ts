@@ -184,7 +184,7 @@ export const vi: LessonBody = {
           type: "p",
           text: "Chọn một pattern và một kịch bản, rồi bấm Phát hoặc đi từng bước. Theo dõi hai bộ đếm: **số lần gọi LLM** (đại diện cho chi phí) và **số vòng tuần tự** (đại diện cho độ trễ). Các kịch bản là ví dụ minh họa được viết cho bài học này, không phải số liệu đo thực tế.",
         },
-        { type: "interactive", widget: "flow-explorer", ref: "patterns" },
+        { type: "interactive", widget: "flow", ref: "patterns" },
       ],
     },
     {
@@ -371,18 +371,18 @@ export const vi: LessonBody = {
               id: "q-parallel",
               prompt:
                 "Trợ lý review code của bạn chạy ba reviewer độc lập (bảo mật, hiệu năng, style) cùng lúc thay vì lần lượt. Điều gì thay đổi?",
-              correctOptionId: "b",
+              correctOptionId: "a",
               options: [
                 {
                   id: "a",
-                  text: "Ít lần gọi LLM hơn, nên rẻ hơn",
-                  feedback: "Không. Vẫn là ba lần gọi. Chạy song song không làm chúng rẻ hơn.",
+                  text: "Số lần gọi như cũ, độ trễ tổng thể thấp hơn",
+                  feedback: "Đúng. Chi phí vẫn là ba lần gọi, nhưng chúng diễn ra trong một vòng thay vì ba. Đây là sectioning: các tác vụ con độc lập chạy đồng thời.",
                 },
                 {
                   id: "b",
-                  text: "Số lần gọi như cũ, độ trễ tổng thể thấp hơn",
+                  text: "Ít lần gọi LLM hơn, nên rẻ hơn",
                   feedback:
-                    "Đúng. Chi phí vẫn là ba lần gọi, nhưng chúng diễn ra trong một vòng thay vì ba. Đây là sectioning: các tác vụ con độc lập chạy đồng thời.",
+                    "Không. Vẫn là ba lần gọi. Chạy song song không làm chúng rẻ hơn.",
                 },
                 {
                   id: "c",
@@ -396,7 +396,7 @@ export const vi: LessonBody = {
               id: "q-stopping",
               prompt:
                 "Agent viết code của bạn đôi khi lặp rất lâu, sửa file rồi chạy lại test liên tục. Thay đổi nào đúng tinh thần bài viết nhất?",
-              correctOptionId: "b",
+              correctOptionId: "c",
               options: [
                 {
                   id: "a",
@@ -406,15 +406,15 @@ export const vi: LessonBody = {
                 },
                 {
                   id: "b",
-                  text: "Đặt số vòng lặp tối đa và chuyển trace cho con người khi chạm giới hạn",
-                  feedback:
-                    "Chính xác. Bài viết khuyên dùng điều kiện dừng, như số vòng lặp tối đa, để giữ quyền kiểm soát, và agent có thể dừng lại xin ý kiến con người khi gặp trở ngại.",
-                },
-                {
-                  id: "c",
                   text: "Chuyển sang framework lớn hơn với nhiều lớp trừu tượng hơn",
                   feedback:
                     "Bài viết cảnh báo rằng các lớp trừu tượng có thể che khuất prompt và phản hồi bên dưới, khiến đúng loại vấn đề này càng khó debug.",
+                },
+                {
+                  id: "c",
+                  text: "Đặt số vòng lặp tối đa và chuyển trace cho con người khi chạm giới hạn",
+                  feedback:
+                    "Chính xác. Bài viết khuyên dùng điều kiện dừng, như số vòng lặp tối đa, để giữ quyền kiểm soát, và agent có thể dừng lại xin ý kiến con người khi gặp trở ngại.",
                 },
               ],
             },

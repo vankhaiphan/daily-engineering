@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
+import { useId, useMemo, useState } from "react";
 import type { FlowExplorerSpec, FlowNodeKind } from "@/content/schema";
-import { IconPause, IconPlay, IconRestart, IconStepBack, IconStepForward } from "@/components/icons";
 import { useLesson } from "@/components/lesson/LessonContext";
 import { computeMetrics, edgePath, visitedNodes } from "@/lib/flow";
+import { ChoiceChips, StepCaption, StepControls, VISUAL_FRAME } from "./StepControls";
+import { usePrefersReducedMotion, useStepper } from "./useStepper";
 
-const STEP_MS = 2600;
-
-const KIND_COLOR: Record<FlowNodeKind, string> = {
+export const KIND_COLOR: Record<FlowNodeKind, string> = {
   llm: "var(--k-llm)",
   code: "var(--k-code)",
   tool: "var(--k-tool)",
@@ -18,23 +17,16 @@ const KIND_COLOR: Record<FlowNodeKind, string> = {
 };
 
 /** Shrink long labels to fit their box (approx. 0.55em average glyph width). */
-function labelFontSize(label: string, width: number): number {
+export function labelFontSize(label: string, width: number): number {
   const fit = (width - 14) / (label.length * 0.55);
   return Math.max(9.5, Math.min(13, fit));
 }
 
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-function subscribeReducedMotion(onChange: () => void) {
-  const query = window.matchMedia(REDUCED_MOTION);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(subscribeReducedMotion, () => window.matchMedia(REDUCED_MOTION).matches, () => false);
-}
-
+/**
+ * Architecture / data-flow / state-machine diagrams: nodes + edges, with
+ * scripted traces that highlight what runs at each step, plus live
+ * "LLM calls" (cost) and "sequential rounds" (latency) counters.
+ */
 export function FlowExplorer({ spec }: { spec: FlowExplorerSpec }) {
   const { locale, ui } = useLesson();
   const t = ui.explorer;
@@ -45,13 +37,13 @@ export function FlowExplorer({ spec }: { spec: FlowExplorerSpec }) {
   const scenario = spec.scenarios.find((s) => s.id === scenarioId) ?? spec.scenarios[0];
   const [variantId, setVariantId] = useState(scenario.variants[0].id);
   const variant = scenario.variants.find((v) => v.id === variantId) ?? scenario.variants[0];
-  const [stepIndex, setStepIndex] = useState(-1);
-  const [playing, setPlaying] = useState(false);
-
   const steps = variant.steps;
+  const stepper = useStepper(steps.length);
+  const stepIndex = stepper.index;
+
   const step = stepIndex >= 0 ? steps[stepIndex] : undefined;
-  const atEnd = stepIndex >= steps.length - 1;
   const metrics = computeMetrics(steps, stepIndex);
+  const metricMode = spec.metrics ?? "calls+rounds";
   const visited = useMemo(() => visitedNodes(steps, stepIndex), [steps, stepIndex]);
   const visitedEdges = useMemo(() => {
     const seen = new Set<string>();
@@ -63,81 +55,38 @@ export function FlowExplorer({ spec }: { spec: FlowExplorerSpec }) {
   const activeNodes = new Set(step?.nodes ?? []);
   const activeEdges = new Set(step?.edges ?? []);
 
-  // Auto-advance while playing; stop at the last step.
-  useEffect(() => {
-    if (!playing || atEnd) return;
-    const timer = window.setTimeout(
-      () => {
-        setStepIndex(stepIndex + 1);
-        if (stepIndex + 1 >= steps.length - 1) setPlaying(false);
-      },
-      stepIndex < 0 ? 300 : STEP_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [playing, stepIndex, atEnd, steps.length]);
-
   const selectScenario = (id: string) => {
     const next = spec.scenarios.find((s) => s.id === id) ?? spec.scenarios[0];
     setScenarioId(next.id);
     setVariantId(next.variants[0].id);
-    setStepIndex(-1);
-    setPlaying(false);
+    stepper.reset();
   };
 
   const selectVariant = (id: string) => {
     setVariantId(id);
-    setStepIndex(-1);
-    setPlaying(false);
-  };
-
-  const togglePlay = () => {
-    if (playing) return setPlaying(false);
-    if (atEnd) setStepIndex(-1);
-    setPlaying(true);
+    stepper.reset();
   };
 
   const labelOf = (nodeId: string) => (variant.nodeLabels?.[nodeId] ?? nodeMap.get(nodeId)?.label)?.[locale] ?? nodeId;
   const kindsUsed = Array.from(new Set(scenario.nodes.filter((n) => !hidden.has(n.id)).map((n) => n.kind)));
 
   return (
-    <div className="not-prose -mx-4 border-y border-line bg-surface px-4 py-4 sm:mx-0 sm:rounded-2xl sm:border" data-testid="flow-explorer">
-      {/* Pattern picker */}
-      <p className="text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">{t.pattern}</p>
-      <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label={t.pattern}>
-        {spec.scenarios.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            aria-pressed={s.id === scenario.id}
-            onClick={() => selectScenario(s.id)}
-            data-testid={`pattern-${s.id}`}
-            className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium ${
-              s.id === scenario.id ? "border-accent bg-accent text-accent-ink" : "border-line text-ink-2"
-            }`}
-          >
-            {s.label[locale]}
-          </button>
-        ))}
-      </div>
-
-      {/* Scenario picker */}
-      <p className="mt-4 text-[0.75rem] font-semibold uppercase tracking-wide text-ink-3">{t.scenario}</p>
-      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={t.scenario}>
-        {scenario.variants.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            aria-pressed={v.id === variant.id}
-            onClick={() => selectVariant(v.id)}
-            data-testid={`variant-${v.id}`}
-            className={`min-h-11 rounded-xl border px-3 text-left text-sm ${
-              v.id === variant.id ? "border-ink bg-surface-2 font-medium text-ink" : "border-line text-ink-2"
-            }`}
-          >
-            {v.label[locale]}
-          </button>
-        ))}
-      </div>
+    <div className={VISUAL_FRAME} data-testid="flow-explorer">
+      <ChoiceChips
+        label={spec.scenarioLabel?.[locale] ?? t.pattern}
+        options={spec.scenarios.map((s) => ({ id: s.id, label: s.label[locale] }))}
+        value={scenario.id}
+        onChange={selectScenario}
+        testIdPrefix="pattern"
+      />
+      <ChoiceChips
+        label={t.scenario}
+        options={scenario.variants.map((v) => ({ id: v.id, label: v.label[locale] }))}
+        value={variant.id}
+        onChange={selectVariant}
+        testIdPrefix="variant"
+        variant="card"
+      />
 
       <p className="mt-3 text-sm text-ink-2">
         <span className="font-semibold text-ink">{t.whoDecides}:</span> {scenario.controlFlow[locale]}
@@ -252,91 +201,31 @@ export function FlowExplorer({ spec }: { spec: FlowExplorerSpec }) {
         ))}
       </ul>
 
-      {/* Metrics */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-surface-2 px-3 py-2">
-          <p className="text-xs text-ink-3">{t.calls}</p>
-          <p className="text-2xl font-semibold tabular-nums" data-testid="metric-calls">{metrics.calls}</p>
+      {/* Metrics: calls ≈ cost, rounds ≈ latency depth */}
+      {metricMode !== "none" ? (
+        <div className={`mt-4 grid gap-2 ${metricMode === "calls" ? "grid-cols-1" : "grid-cols-2"}`}>
+          <div className="rounded-xl bg-surface-2 px-3 py-2">
+            <p className="text-xs text-ink-3">{t.calls}</p>
+            <p className="text-2xl font-semibold tabular-nums" data-testid="metric-calls">{metrics.calls}</p>
+          </div>
+          {metricMode === "calls+rounds" ? (
+            <div className="rounded-xl bg-surface-2 px-3 py-2">
+              <p className="text-xs text-ink-3">{t.rounds}</p>
+              <p className="text-2xl font-semibold tabular-nums" data-testid="metric-rounds">{metrics.rounds}</p>
+            </div>
+          ) : null}
         </div>
-        <div className="rounded-xl bg-surface-2 px-3 py-2">
-          <p className="text-xs text-ink-3">{t.rounds}</p>
-          <p className="text-2xl font-semibold tabular-nums" data-testid="metric-rounds">{metrics.rounds}</p>
-        </div>
-      </div>
+      ) : null}
 
-      {/* Caption */}
-      <div className="mt-3 min-h-[5.5rem] rounded-xl border border-line px-3 py-2" aria-live="polite" data-testid="flow-caption">
-        {step ? (
-          <>
-            <p className="flex items-center justify-between text-xs text-ink-3">
-              <span data-testid="flow-step">{t.step(stepIndex + 1, steps.length)}</span>
-              {step.outcome ? (
-                <span
-                  className={`rounded-full px-2 py-0.5 font-semibold ${
-                    step.outcome === "success" ? "bg-ok-soft text-ok" : "bg-bad-soft text-bad"
-                  }`}
-                >
-                  {t.outcome[step.outcome]}
-                </span>
-              ) : null}
-            </p>
-            <p className="mt-1 text-[0.95rem] leading-snug">{step.caption[locale]}</p>
-          </>
-        ) : (
-          <p className="text-[0.95rem] text-ink-2">{t.ready}</p>
-        )}
-      </div>
-
-      {/* Controls */}
-      <div className="mt-3 flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setPlaying(false);
-            setStepIndex(-1);
-          }}
-          disabled={stepIndex < 0}
-          aria-label={t.restart}
-          className="grid size-12 place-items-center rounded-full text-ink-2 active:bg-surface-2 disabled:opacity-35"
-        >
-          <IconRestart />
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setPlaying(false);
-            setStepIndex((i) => Math.max(-1, i - 1));
-          }}
-          disabled={stepIndex < 0}
-          aria-label={t.prev}
-          data-testid="flow-prev"
-          className="grid size-12 place-items-center rounded-full text-ink-2 active:bg-surface-2 disabled:opacity-35"
-        >
-          <IconStepBack />
-        </button>
-        <button
-          type="button"
-          onClick={togglePlay}
-          aria-label={playing ? t.pause : t.play}
-          data-testid="flow-play"
-          className="grid size-14 place-items-center rounded-full bg-accent text-accent-ink shadow-sm active:opacity-80"
-        >
-          {playing ? <IconPause /> : <IconPlay />}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setPlaying(false);
-            setStepIndex((i) => Math.min(steps.length - 1, i + 1));
-          }}
-          disabled={atEnd}
-          aria-label={t.next}
-          data-testid="flow-next"
-          className="grid size-12 place-items-center rounded-full text-ink-2 active:bg-surface-2 disabled:opacity-35"
-        >
-          <IconStepForward />
-        </button>
-      </div>
+      <StepCaption
+        testId="flow-caption"
+        stepTestId="flow-step"
+        stepLabel={step ? t.step(stepIndex + 1, steps.length) : undefined}
+        outcome={step?.outcome}
+        text={step?.caption[locale]}
+        placeholder={t.ready}
+      />
+      <StepControls stepper={stepper} testIdPrefix="flow" />
 
       {/* Trace log */}
       {stepIndex >= 0 ? (

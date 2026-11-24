@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getLesson, listLessons } from "@/content";
-import type { Lesson } from "@/content/schema";
+import type { FlowExplorerSpec, Lesson } from "@/content/schema";
 import { validateLesson } from "@/content/validate";
 import { computeMetrics } from "@/lib/flow";
 import { LOCALES } from "@/lib/i18n/config";
@@ -64,7 +64,7 @@ describe("lesson content", () => {
 
   it("detects broken references in the interactive diagram", () => {
     const broken = clone(lesson);
-    broken.interactives.patterns.scenarios[0].variants[0].steps[0].nodes.push("ghost");
+    (broken.interactives.patterns as FlowExplorerSpec).scenarios[0].variants[0].steps[0].nodes.push("ghost");
     expect(validateLesson(broken).some((e) => e.includes("unknown node ghost"))).toBe(true);
   });
 
@@ -79,7 +79,7 @@ describe("lesson content", () => {
 });
 
 describe("explorer traces match the numbers their captions claim", () => {
-  const spec = lesson.interactives.patterns;
+  const spec = (lesson.interactives.patterns as FlowExplorerSpec);
   const final = (scenario: string, variant: string) => {
     const steps = spec.scenarios.find((s) => s.id === scenario)!.variants.find((v) => v.id === variant)!.steps;
     return computeMetrics(steps, steps.length - 1);
@@ -104,7 +104,7 @@ describe("explorer traces match the numbers their captions claim", () => {
 });
 
 describe("translations are real, not copies of English", () => {
-  const spec = lesson.interactives.patterns;
+  const spec = (lesson.interactives.patterns as FlowExplorerSpec);
   const localized = spec.scenarios.flatMap((s) => [
     s.label,
     s.controlFlow,

@@ -9,6 +9,7 @@ const L = (en: string, vi: string, fr: string): Localized => ({ en, vi, fr });
  * the LLM-call and round counts are exact properties of each scenario.
  */
 export const agenticPatternsExplorer: FlowExplorerSpec = {
+  kind: "flow",
   id: "agentic-patterns",
   viewBox: { width: 340, height: 400 },
   scenarios: [

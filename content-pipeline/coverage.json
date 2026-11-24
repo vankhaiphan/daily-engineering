@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "slug": "building-effective-agents",
+      "status": "published",
+      "createdOn": "2026-11-24",
+      "title": "Workflows vs. Agents: Building Effective LLM Systems",
+      "topics": [
+        "ai-agents",
+        "multi-agent-systems",
+        "claude-code",
+        "system-design"
+      ],
+      "keywords": [
+        "agentic systems",
+        "workflows vs agents",
+        "prompt chaining",
+        "routing",
+        "parallelization",
+        "orchestrator-workers",
+        "evaluator-optimizer",
+        "agent loop",
+        "agent-computer interface",
+        "tool design"
+      ],
+      "sources": [
+        "anthropic.com/article/building-effective-agents",
+        "anthropic.com/article/multi-agent-research-system"
+      ]
+    }
+  ]
+}

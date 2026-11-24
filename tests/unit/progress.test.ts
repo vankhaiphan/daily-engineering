@@ -24,7 +24,8 @@ describe("progress reducers", () => {
   it("returns the same reference when nothing changes (no needless writes)", () => {
     const s = setLastSection(EMPTY_STATE, "l", "a", 1);
     expect(setLastSection(s, "l", "a", 2)).toBe(s);
-    expect(recordQuizAnswer(recordQuizAnswer(s, "l", "q", "b"), "l", "q", "b")).toEqual(recordQuizAnswer(s, "l", "q", "b"));
+    const answered = recordQuizAnswer(s, "l", "q", "b", 3);
+    expect(recordQuizAnswer(answered, "l", "q", "b", 4)).toBe(answered);
   });
 
   it("records and resets quiz answers", () => {

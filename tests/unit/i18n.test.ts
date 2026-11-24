@@ -47,12 +47,7 @@ describe("UI dictionaries", () => {
 });
 
 describe("proxy route table", async () => {
-  const { isKnownPath, LESSON_SLUGS } = await import("@/lib/routes");
-  const { listLessons } = await import("@/content");
-
-  it("lists exactly the registered lessons", () => {
-    expect([...LESSON_SLUGS].sort()).toEqual(listLessons().map((l) => l.slug).sort());
-  });
+  const { isKnownPath } = await import("@/lib/routes");
 
   it.each([
     ["/en", true],

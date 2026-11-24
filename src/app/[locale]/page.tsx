@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookmarksList } from "@/components/home/BookmarksList";
+import { LessonLibrary } from "@/components/home/LessonLibrary";
 import { LessonProgressLink } from "@/components/home/LessonProgressLink";
 import { IconBook, IconCompass } from "@/components/icons";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SettingsButton } from "@/components/SettingsButton";
 import { listLessons } from "@/content";
-import { formatDate } from "@/lib/format";
+import { SourceDate } from "@/components/SourceDate";
 import { isLocale } from "@/lib/i18n/config";
 import { getUI } from "@/lib/i18n/ui";
 import { readingMinutes } from "@/lib/reading-time";
@@ -44,6 +45,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           <p className="text-xs font-semibold uppercase tracking-wider text-accent">
             {ui.home.todayLesson} · {ui.home.minutes(readingMinutes(body))}
           </p>
+          {today.status === "draft" ? (
+            <p className="mt-2 inline-block rounded-full bg-bad-soft px-2 py-0.5 text-xs font-semibold text-bad" data-testid="draft-badge">
+              {ui.home.draft}
+            </p>
+          ) : null}
           <h1 id="today-title" className="mt-2 font-serif text-2xl font-semibold leading-tight">
             {body.title}
           </h1>
@@ -51,7 +57,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           {primary ? (
             <p className="mt-3 text-sm text-ink-3">
               {ui.home.basedOn} <span lang="en">{primary.title}</span> · {primary.publisher} ·{" "}
-              <time dateTime={primary.publishedOn}>{formatDate(primary.publishedOn, locale)}</time>
+              <SourceDate iso={primary.publishedOn} locale={locale} fallback={ui.sources.noDate} />
             </p>
           ) : null}
           <LessonProgressLink
@@ -81,6 +87,18 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             </div>
           </div>
         </section>
+
+        <LessonLibrary
+          locale={locale}
+          lessons={lessons.map((l) => ({
+            slug: l.slug,
+            title: l.content[locale].title,
+            minutes: readingMinutes(l.content[locale]),
+            level: l.level,
+            draft: l.status === "draft",
+            sectionIds: l.content[locale].sections.map((s) => s.id),
+          }))}
+        />
 
         <BookmarksList
           locale={locale}

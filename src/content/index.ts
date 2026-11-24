@@ -1,17 +1,24 @@
 /**
- * Lesson registry. Today lessons are TypeScript modules; a future scheduled
- * generator can produce the same `Lesson` shape as JSON, run it through
- * `validateLesson`, and register it here (or load it from storage).
+ * Lesson registry. Lessons are TypeScript modules registered through
+ * `catalog.json` → `lessons/registry.ts` (generated). Pages only ever see
+ * visible lessons (published, or drafts outside production).
  */
-import { buildingEffectiveAgents } from "./lessons/building-effective-agents";
+import { isVisible } from "./catalog";
+import { REGISTERED_LESSONS } from "./lessons/registry";
 import type { Lesson } from "./schema";
 
-const LESSONS: readonly Lesson[] = [buildingEffectiveAgents];
+/** Every registered lesson, drafts included (validation and scripts). */
+export function listAllLessons(): readonly Lesson[] {
+  return REGISTERED_LESSONS;
+}
 
+/** Visible lessons, newest first. */
 export function listLessons(): readonly Lesson[] {
-  return LESSONS;
+  return REGISTERED_LESSONS.filter((lesson) => isVisible(lesson.status)).toSorted(
+    (a, b) => b.createdOn.localeCompare(a.createdOn),
+  );
 }
 
 export function getLesson(slug: string): Lesson | undefined {
-  return LESSONS.find((lesson) => lesson.slug === slug);
+  return listLessons().find((lesson) => lesson.slug === slug);
 }

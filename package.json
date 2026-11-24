@@ -10,9 +10,17 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "next build && playwright test",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run test:e2e",
-    "test:e2e:deployed": "playwright test"
+    "test:e2e": "SHOW_DRAFT_LESSONS=true next build && playwright test",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run content:validate && npm run test:e2e",
+    "test:e2e:deployed": "playwright test",
+    "content:validate": "tsx scripts/content/validate.mts",
+    "content:dedupe": "tsx scripts/content/dedupe.mts",
+    "content:candidates": "tsx scripts/content/candidates.mts",
+    "content:new": "tsx scripts/content/new.mts",
+    "content:registry": "tsx scripts/content/registry.mts",
+    "content:report": "tsx scripts/content/report.mts",
+    "content:publish": "tsx scripts/content/publish.mts",
+    "content:reject": "tsx scripts/content/reject.mts"
   },
   "dependencies": {
     "next": "16.4.6",
@@ -28,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.1.1"
   }

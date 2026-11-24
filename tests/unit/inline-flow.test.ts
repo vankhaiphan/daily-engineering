@@ -52,3 +52,15 @@ describe("formatDate", async () => {
     expect(formatDate("2025-06-01", "fr")).toBe("1er juin 2025");
   });
 });
+
+describe("formatPercent", async () => {
+  const { formatPercent } = await import("@/lib/format");
+  it("never rounds uncertainty away", () => {
+    expect(formatPercent(0.999023)).toBe("99.9%");
+    expect(formatPercent(0.99999905)).toBe(">99.9%");
+    expect(formatPercent(1)).toBe("100%");
+    expect(formatPercent(0.421875)).toBe("42%");
+    expect(formatPercent(0.0009765)).toBe("0.1%");
+    expect(formatPercent(0.0000001)).toBe("<0.1%");
+  });
+});
