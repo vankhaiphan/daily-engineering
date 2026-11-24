@@ -72,6 +72,8 @@ Lessons are researched and written by Claude Code using two project skills, and 
 | `npm run content:reject -- <slug> --reason "<why>"` | Remove a draft and record why |
 | `npm run content:registry` | Regenerate registry and coverage from the catalog |
 
+**Scheduled runs (Phase 4):** two weekday Claude Code cloud tasks (06:37 AI Discovery, 17:37 Engineering Mastery, Europe/Paris) each open one draft lesson PR; see [`content-pipeline/SCHEDULING.md`](content-pipeline/SCHEDULING.md) and `npm run schedule -- <doctor|plan|claim|finish|block|pr|guard>`.
+
 Skills: `.claude/skills/lesson-discovery` (find, verify, score, dedupe) and `.claude/skills/lesson-generation` (research, write VI/EN/FR, visualize, validate, report, commit). In Claude Code, ask for example *"Generate a Daily Engineering lesson from https://…"*.
 
 **Visualization library** (`src/components/visuals/`), all driven by plain data specs with shared Play/Pause, Previous/Next, Reset and scenario controls, touch-sized targets, reduced-motion support and screen-reader text:

@@ -69,5 +69,5 @@ Removes the draft and records the reason on the candidate (so it isn't picked ag
    ```
 4. Commit, merge the PR. Production shows the lesson after the deploy.
 
-## Phase 4 hook (not implemented)
-A scheduled cloud session would run: discovery skill → pick the top `shortlisted` candidate → generation skill → open a PR. The steps above are already non-interactive except human review and publishing, which stay manual by design.
+## Scheduled runs (Phase 4)
+Two weekday cloud scheduled tasks (morning AI Discovery, evening Engineering Mastery) run this pipeline unattended and open one draft PR per slot. Setup, smoke test, activation and runbook: [`SCHEDULING.md`](SCHEDULING.md).

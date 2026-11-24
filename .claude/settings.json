@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(npm run content:publish:*)",
+      "Bash(npm run -s content:publish:*)",
+      "Bash(npm run-script content:publish:*)",
+      "Bash(npm run-script -s content:publish:*)",
+      "Bash(npx tsx scripts/content/publish.mts:*)",
+      "Bash(tsx scripts/content/publish.mts:*)",
+      "Bash(node scripts/content/publish.mts:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push --delete:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin +:*)",
+      "Bash(git push origin HEAD:main:*)",
+      "Bash(git push origin HEAD:refs/heads/main:*)",
+      "Bash(git push origin --delete:*)",
+      "Bash(git push origin --force:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh api -X PUT:*)",
+      "Bash(gh api --method PUT:*)"
+    ]
+  }
+}

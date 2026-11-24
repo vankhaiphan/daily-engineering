@@ -21,7 +21,7 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
 
 3. **Plan before writing.** In a short note (in the chat, not a file): the learner's "aha", 8–12 sections, which 1–3 visuals and why (see the decision table in `references/visualizations.md`), 3–4 quiz questions with misconceptions they target, and the interview pitch.
 
-4. **Scaffold.** `npm run content:new -- <slug> --candidate <candidate-id>`. This registers a draft, updates the catalog and registry, and marks the candidate `selected`.
+4. **Scaffold.** `npm run content:new -- <slug> --candidate <candidate-id>` (scheduled runs add `--date <slot date>`). This registers a draft, updates the catalog and registry, and marks the candidate `selected`.
 
 5. **Write the lesson files** (replace every TODO):
    - `sources.ts`: verified metadata; `publishedOn: null` when not shown (primary sources must have a date).
@@ -37,7 +37,7 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
 
 8. **Write the review report.** `npm run content:report -- <slug>` → `content-pipeline/reviews/<slug>.md`.
 
-9. **Prepare the git change.** On a `content/<slug>` branch (or the branch the user named), commit only the lesson folder, catalog/registry/coverage, candidates, review report, and the test path list. Don't touch app code in a content change unless a renderer bug blocks the lesson (then make it a separate commit and say so). Don't push, merge or deploy unless the user asks. Summarize for the user: source, selection reason, visuals, word counts, and **every review flag** they must resolve.
+9. **Prepare the git change.** (Scheduled runs skip this step: `npm run schedule -- finish` and `pr` handle the branch, commit, push and draft PR; see `.claude/skills/scheduled-lesson`.) On a `content/<slug>` branch (or the branch the user named), commit only the lesson folder, catalog/registry/coverage, candidates, review report, and the test path list. Don't touch app code in a content change unless a renderer bug blocks the lesson (then make it a separate commit and say so). Don't push, merge or deploy unless the user asks. Summarize for the user: source, selection reason, visuals, word counts, and **every review flag** they must resolve.
 
 ## Regenerating or rejecting
 - To redo a lesson in place: keep the slug, fix the files, re-run steps 6–9.

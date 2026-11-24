@@ -24,4 +24,6 @@ Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents
 
 ## Lesson content
 
+Scheduled (unattended) runs follow `.claude/skills/scheduled-lesson` and `content-pipeline/SCHEDULING.md`: one draft lesson per Europe/Paris weekday slot, on its own `content/<date>-<slot>` branch, never published or merged by a run.
+
 Lessons are data in `src/content/lessons/<slug>/`, registered through `src/content/catalog.json`. To discover topics or generate, regenerate, validate or publish lessons, follow `.claude/skills/lesson-discovery` and `.claude/skills/lesson-generation` and the handbook `content-pipeline/README.md`. Never mark a claim `verified` without a verbatim quote seen in the current session; never publish (`content:publish`) without a human reviewer.
