@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
+/** Set E2E_BASE_URL to test a deployed site instead of a local production build. */
+const EXTERNAL_URL = process.env.E2E_BASE_URL;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -8,7 +10,7 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: EXTERNAL_URL ?? `http://localhost:${PORT}`,
     locale: "en-US",
     trace: "retain-on-failure",
   },
@@ -18,10 +20,12 @@ export default defineConfig({
     // Narrowest realistic iPhone width (iPhone SE 1st gen / zoomed display).
     { name: "iphone-320", use: { ...devices["iPhone 13"], viewport: { width: 320, height: 568 } } },
   ],
-  webServer: {
-    command: `npx next start --port ${PORT}`,
-    url: `http://localhost:${PORT}/en`,
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  webServer: EXTERNAL_URL
+    ? undefined
+    : {
+        command: `npx next start --port ${PORT}`,
+        url: `http://localhost:${PORT}/en`,
+        reuseExistingServer: false,
+        timeout: 60_000,
+      },
 });

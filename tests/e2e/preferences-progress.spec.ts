@@ -50,7 +50,9 @@ test("quiz gives per-option feedback, scores, and remembers answers", async ({ p
 });
 
 test("bookmarks appear on the home screen and link back", async ({ page }) => {
-  await page.goto(LESSON);
+  // Wait for the app's scripts: a tap before hydration is dropped (seen once against
+  // the deployed site, where scripts arrive more slowly than from localhost).
+  await page.goto(LESSON, { waitUntil: "networkidle" });
   const toggle = page.getByTestId("bookmark-agents");
   await toggle.scrollIntoViewIfNeeded();
   await toggle.tap();
@@ -63,6 +65,7 @@ test("bookmarks appear on the home screen and link back", async ({ page }) => {
   await expect(page).toHaveURL(/#agents$/);
 
   await page.getByTestId("bookmark-agents").tap();
+  await expect(page.getByTestId("bookmark-agents")).toHaveAttribute("aria-pressed", "false");
   await page.goto("/en");
   await expect(page.getByTestId("bookmarks")).toHaveCount(0);
 });

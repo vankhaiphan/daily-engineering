@@ -36,6 +36,7 @@ npm test               # Vitest: content validation, i18n, progress, diagram mat
 npx playwright install webkit   # once, for the e2e browser
 npm run test:e2e       # production build + Playwright on iPhone 13 (WebKit) and 320 px width
 npm run check          # all of the above
+E2E_BASE_URL=https://daily-engineering.vercel.app npm run test:e2e:deployed   # same e2e suite against the live site
 ```
 
 ## What's in the MVP
