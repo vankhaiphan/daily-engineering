@@ -33,7 +33,7 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
 
 6. **Validate until clean.** `npm run content:validate -- <slug>`. Fix every `error`. `review` lines are expected for a draft (the draft status itself, and any `needs-review` claim). Read `warn` lines and fix what is reasonable.
 
-7. **Check it renders on a phone.** The e2e overflow (320 px) and console-error tests loop over `DRAFT_PATHS` in `tests/e2e/helpers.ts`: add the new lesson's read and explore paths there. Then run `npm run lint && npm run typecheck && npm test && npm run test:e2e`. If you added computed visual data, add a unit test that checks it against the formula (see `tests/unit/pipeline.test.ts`).
+7. **Check it renders on a phone.** The e2e overflow (320 px) and console-error tests cover every lesson in `src/content/catalog.json` automatically (`tests/e2e/helpers.ts`). Then run `npm run lint && npm run typecheck && npm test && npm run test:e2e`. If you added computed visual data, add a unit test that checks it against the formula (see `tests/unit/pipeline.test.ts`).
 
 8. **Write the review report.** `npm run content:report -- <slug>` → `content-pipeline/reviews/<slug>.md`.
 

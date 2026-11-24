@@ -61,6 +61,7 @@ describe("review gates on the generated lessons", () => {
 
   it("only the draft marker is non-blocking; any needs-review claim blocks", () => {
     const l = structuredClone(retries);
+    l.status = "draft";
     l.review.claims.push({ id: "unconfirmed", claim: "x", evidence: "not found in any source", status: "needs-review" });
     const report = checkLessonQuality(l, { lessons, catalog: CATALOG });
     expect(report.reviewFlags).toContain(DRAFT_FLAG);

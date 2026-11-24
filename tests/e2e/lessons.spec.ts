@@ -1,16 +1,20 @@
 import { expect, test } from "@playwright/test";
-import { DRAFTS_VISIBLE } from "./helpers";
+import { VISIBLE_LESSONS } from "./helpers";
 
-test.skip(!DRAFTS_VISIBLE, "draft lessons are hidden on the production site");
+const visible = (slug: string) => VISIBLE_LESSONS.some((l) => l.slug === slug);
+test.skip(!visible("agent-evals") || !visible("timeouts-retries-backoff"), "lessons not visible on this site (drafts in production)");
 
 const EVALS = "/en/lessons/agent-evals";
 const RETRIES = "/en/lessons/timeouts-retries-backoff";
 
-test("home lists every lesson, newest first, with draft badges", async ({ page }) => {
+test("home lists every visible lesson, with a badge only on drafts", async ({ page }) => {
   await page.goto("/en", { waitUntil: "networkidle" });
   const library = page.getByTestId("library");
-  await expect(library.getByRole("link")).toHaveCount(3);
-  await expect(library).toContainText("Draft · in review");
+  await expect(library.getByRole("link")).toHaveCount(VISIBLE_LESSONS.length);
+  for (const lesson of VISIBLE_LESSONS) {
+    const badge = library.getByTestId(`library-${lesson.slug}`).getByText("Draft · in review");
+    await expect(badge).toHaveCount(lesson.status === "draft" ? 1 : 0);
+  }
   await library.getByTestId("library-timeouts-retries-backoff").tap();
   await expect(page).toHaveURL(/timeouts-retries-backoff$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Timeouts, Retries and Backoff");

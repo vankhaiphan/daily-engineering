@@ -34,8 +34,12 @@ export async function loadLessons(): Promise<readonly Lesson[]> {
   return listAllLessons();
 }
 
-export async function writeCoverage() {
-  writeJson(PATHS.coverage, buildCoverage(await loadLessons()));
+/**
+ * Pass `lessons` when this process already imported the lesson modules and
+ * then edited them on disk: ES module caching would otherwise return stale data.
+ */
+export async function writeCoverage(lessons?: readonly Lesson[]) {
+  writeJson(PATHS.coverage, buildCoverage(lessons ?? (await loadLessons())));
 }
 
 export function arg(name: string): string | undefined {

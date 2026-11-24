@@ -44,5 +44,6 @@ writeRegistry(catalog);
 const candidates = readCandidates();
 for (const c of candidates.candidates) if (c.lessonSlug === slug) c.status = "published";
 writeCandidates(candidates);
-await writeCoverage();
+// The lesson modules were imported before the edits above; patch the status in memory.
+await writeCoverage(lessons.map((l) => (l.slug === slug ? { ...l, status: "published" as const } : l)));
 console.log(`✔ ${slug} published (reviewed by ${reviewer}). Commit, open a PR, and merge to deploy.`);
