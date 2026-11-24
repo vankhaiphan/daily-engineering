@@ -11,7 +11,7 @@ const lesson: Lesson = {
   slug: "agent-evals",
   version: 1,
   createdOn: "2026-11-24",
-  status: "draft",
+  status: "published",
   level: "intermediate",
   topics: ["ai-agents", "ai-sdlc", "claude-code"],
   keywords: [

@@ -11,7 +11,7 @@ const lesson: Lesson = {
   slug: "timeouts-retries-backoff",
   version: 1,
   createdOn: "2026-11-24",
-  status: "draft",
+  status: "published",
   level: "intermediate",
   topics: ["distributed-systems", "backend", "aws", "system-design"],
   keywords: [

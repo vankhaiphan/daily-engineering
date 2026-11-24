@@ -3,7 +3,7 @@
   "lessons": [
     {
       "slug": "agent-evals",
-      "status": "draft",
+      "status": "published",
       "createdOn": "2026-11-24",
       "title": "Evals for AI Agents: How to Know Your Agent Really Works",
       "topics": [
@@ -57,7 +57,7 @@
     },
     {
       "slug": "timeouts-retries-backoff",
-      "status": "draft",
+      "status": "published",
       "createdOn": "2026-11-24",
       "title": "Timeouts, Retries and Backoff with Jitter: Surviving Partial Failure",
       "topics": [

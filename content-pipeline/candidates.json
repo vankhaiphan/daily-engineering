@@ -26,7 +26,7 @@
       },
       "engagementNote": "No public engagement metrics on the page; not scored.",
       "total": 100,
-      "status": "selected",
+      "status": "published",
       "decision": "Selected (A, recent AI engineering): complete vocabulary (task, trial, grader, transcript), grader trade-offs, pass@k vs pass^k with exact math for an interactive chart, and a practical roadmap. No overlap with the existing workflows-vs-agents lesson. High interview value for AI/platform roles.",
       "lessonSlug": "agent-evals"
     },
@@ -199,7 +199,7 @@
       },
       "engagementNote": "No public engagement metrics on the page; not scored.",
       "total": 100,
-      "status": "selected",
+      "status": "published",
       "decision": "Selected (B, evergreen distributed systems): a classic system-design interview topic, written from Amazon's operational experience, with exact numbers (0.1% false timeouts, 243× retry amplification) that suit a sequence diagram and interactive charts. No overlap with existing lessons.",
       "lessonSlug": "timeouts-retries-backoff"
     },

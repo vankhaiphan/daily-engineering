@@ -4,7 +4,7 @@ const S = "demystifying-evals";
 
 /** Every factual claim taught, with verbatim evidence from the source (checked 2026-11-24). */
 export const review: LessonReview = {
-  reviewedBy: "",
+  reviewedBy: "Khai PHAN",
   reviewedOn: "2026-11-24",
   claims: [
     { id: "goal", claim: "Good evals help teams ship agents more confidently.", sourceId: S, evidence: "Good evaluations help teams ship AI agents more confidently.", status: "verified" },

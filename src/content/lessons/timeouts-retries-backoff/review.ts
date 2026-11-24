@@ -5,7 +5,7 @@ const I = "idempotent-apis";
 
 /** Every factual claim taught, with verbatim evidence (checked 2026-11-24). */
 export const review: LessonReview = {
-  reviewedBy: "",
+  reviewedBy: "Khai PHAN",
   reviewedOn: "2026-11-24",
   claims: [
     { id: "medicine", claim: "Retries help in the right dose but cause damage when overused.", sourceId: T, evidence: "Retries are similar to a powerful medicine -- useful in the right dose, but can cause significant damage when used too much.", status: "verified" },

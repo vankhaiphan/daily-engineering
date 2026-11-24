@@ -1,9 +1,9 @@
 # Review: Evals for AI Agents: How to Know Your Agent Really Works
 
-- Slug: `agent-evals` · status: **draft** · created 2026-11-24 · provenance: lesson-generation-skill (candidate `2026-11-24-anthropic-demystifying-evals`)
+- Slug: `agent-evals` · status: **published** · created 2026-11-24 · provenance: lesson-generation-skill (candidate `2026-11-24-anthropic-demystifying-evals`)
 - Length: VI 2994 words · EN 2317 words · FR 2685 words · ~19 min
 - Visuals: `pipeline` (flow), `passk` (chart)
-- Automated gates: pass · 1 review flag(s) · 0 warning(s)
+- Automated gates: pass · 0 review flag(s) · 0 warning(s)
 
 ## Sources
 - [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents): Anthropic Engineering, Mikaela Grace, Jeremy Hadfield, Rodrigo Olivares, Jiri De Jonghe, published 2026-01-09, checked 2026-11-24 (primary)
@@ -41,7 +41,7 @@
 | ✅ | Like the Swiss Cheese Model, no single evaluation layer catches every issue. | demystifying-evals | Like the Swiss Cheese Model from safety engineering, no single evaluation layer catches every issue. |
 
 ## Needs a human decision
-- [ ] status is draft: visible in dev/preview only until published
+- nothing flagged
 
 ## Errors
 - none

@@ -5,8 +5,8 @@ A mobile-first learning companion for commute study (iPhone Safari first). Phase
 **Lessons** (newest first on the home screen):
 | Lesson | Source | Status |
 |---|---|---|
-| Timeouts, Retries and Backoff with Jitter | AWS Builders' Library, 2019‑12‑05 | draft (generated in Phase 3) |
-| Evals for AI Agents | Anthropic Engineering, 2026‑01‑09 | draft (generated in Phase 3) |
+| Timeouts, Retries and Backoff with Jitter | AWS Builders' Library, 2019‑12‑05 | published (generated in Phase 3, reviewed) |
+| Evals for AI Agents | Anthropic Engineering, 2026‑01‑09 | published (generated in Phase 3, reviewed) |
 | Workflows vs. Agents | Anthropic Engineering, 2024‑12‑19 | published |
 
 Drafts appear in `npm run dev` and on Vercel preview deployments, not in production. See **Content pipeline** below.

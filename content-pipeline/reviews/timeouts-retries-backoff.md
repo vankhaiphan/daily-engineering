@@ -1,9 +1,9 @@
 # Review: Timeouts, Retries and Backoff with Jitter: Surviving Partial Failure
 
-- Slug: `timeouts-retries-backoff` · status: **draft** · created 2026-11-24 · provenance: lesson-generation-skill (candidate `2026-11-24-aws-timeouts-retries-jitter`)
+- Slug: `timeouts-retries-backoff` · status: **published** · created 2026-11-24 · provenance: lesson-generation-skill (candidate `2026-11-24-aws-timeouts-retries-jitter`)
 - Length: VI 2681 words · EN 2097 words · FR 2403 words · ~20 min
 - Visuals: `sequence` (sequence), `amplification` (chart), `jitter` (chart)
-- Automated gates: pass · 1 review flag(s) · 0 warning(s)
+- Automated gates: pass · 0 review flag(s) · 0 warning(s)
 
 ## Sources
 - [Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/): AWS Builders' Library, Marc, published 2019-12-05, checked 2026-11-24 (primary)
@@ -42,7 +42,7 @@
 | 🧮 | The jitter chart shows illustrative retry timing for 100 clients. | ours | Our deterministic, seeded simulation (no measurements); totals checked by a unit test. |
 
 ## Needs a human decision
-- [ ] status is draft: visible in dev/preview only until published
+- nothing flagged
 
 ## Errors
 - none

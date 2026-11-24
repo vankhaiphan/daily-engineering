@@ -6,12 +6,12 @@
   },
   {
     "slug": "agent-evals",
-    "status": "draft",
+    "status": "published",
     "createdOn": "2026-11-24"
   },
   {
     "slug": "timeouts-retries-backoff",
-    "status": "draft",
+    "status": "published",
     "createdOn": "2026-11-24"
   }
 ]
