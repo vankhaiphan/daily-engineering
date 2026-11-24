@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens. Light by default; dark via system preference unless  */
+/* the reader forced light, or always when they forced dark.          */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface-2: #eeebe3;
+  --ink: #1d1c1a;
+  --ink-2: #4f4b44;
+  --ink-3: #7c776d;
+  --line: #e0dbd0;
+  --accent: #b93d0b;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbe7da;
+  --ok: #15803d;
+  --ok-soft: #e2f3e7;
+  --bad: #b42318;
+  --bad-soft: #fbe4e2;
+  --k-llm: #b93d0b;
+  --k-code: #4d6b12;
+  --k-tool: #0f766e;
+  --k-io: #57534b;
+  --k-human: #6d3fc8;
+  --k-stop: #b42318;
+  --code-bg: #1f1d1a;
+  --code-ink: #eee9df;
+  --reading-size: 1.125rem;
+  --header-h: 3.25rem;
+  --tabs-h: 3.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121212;
+    --surface: #1b1b1a;
+    --surface-2: #252523;
+    --ink: #ecebe6;
+    --ink-2: #bdb9b0;
+    --ink-3: #8f8b82;
+    --line: #34332f;
+    --accent: #ff8a4c;
+    --accent-ink: #1b1007;
+    --accent-soft: #3a2316;
+    --ok: #5fd08a;
+    --ok-soft: #173323;
+    --bad: #ff8577;
+    --bad-soft: #3b1c19;
+    --k-llm: #ff8a4c;
+    --k-code: #a3cf5c;
+    --k-tool: #4fd1c5;
+    --k-io: #bdb9b0;
+    --k-human: #b69cff;
+    --k-stop: #ff8577;
+    --code-bg: #0b0b0a;
+    --code-ink: #e8e4da;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121212;
+  --surface: #1b1b1a;
+  --surface-2: #252523;
+  --ink: #ecebe6;
+  --ink-2: #bdb9b0;
+  --ink-3: #8f8b82;
+  --line: #34332f;
+  --accent: #ff8a4c;
+  --accent-ink: #1b1007;
+  --accent-soft: #3a2316;
+  --ok: #5fd08a;
+  --ok-soft: #173323;
+  --bad: #ff8577;
+  --bad-soft: #3b1c19;
+  --k-llm: #ff8a4c;
+  --k-code: #a3cf5c;
+  --k-tool: #4fd1c5;
+  --k-io: #bdb9b0;
+  --k-human: #b69cff;
+  --k-stop: #ff8577;
+  --code-bg: #0b0b0a;
+  --code-ink: #e8e4da;
+}
+
+:root[data-text-size="s"] { --reading-size: 1rem; }
+:root[data-text-size="m"] { --reading-size: 1.125rem; }
+:root[data-text-size="l"] { --reading-size: 1.25rem; }
+:root[data-text-size="xl"] { --reading-size: 1.4375rem; }
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: ui-serif, "New York", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+button,
+a,
+summary,
+[role="tab"] {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Long-form reading typography: scales with the text-size preference. */
+.prose-lesson {
+  font-size: var(--reading-size);
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+.prose-lesson p + p { margin-top: 0.9em; }
+
+.lesson-section {
+  scroll-margin-top: calc(var(--header-h) + 0.75rem);
+}
+
+/* Native <dialog> as a bottom sheet. */
+dialog.sheet {
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 40rem;
+  max-height: 85dvh;
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  padding: 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+@media (min-width: 640px) {
+  dialog.sheet {
+    margin: auto;
+    border-radius: 20px;
+  }
+}
+
+/* Flow explorer animation. */
+.flow-edge-active {
+  stroke-dasharray: 6 6;
+  animation: flow-dash 0.9s linear infinite;
+}
+@keyframes flow-dash {
+  to { stroke-dashoffset: -12; }
+}
+.flow-node rect,
+.flow-node text {
+  transition: fill 250ms ease, stroke 250ms ease, opacity 250ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-edge-active { animation: none; stroke-dasharray: none; }
+  .flow-node rect, .flow-node text { transition: none; }
+  html:focus-within { scroll-behavior: auto; }
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pt-safe { padding-top: env(safe-area-inset-top); }
