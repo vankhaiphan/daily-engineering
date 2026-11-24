@@ -427,8 +427,9 @@ describe("content-safety CI check (every PR) and the local guard", async () => {
       ['export const s = "unterminated', ""],
       // Ways to make the checker believe a wrong type (so bracket keys can't be trusted otherwise).
       ['declare const fetch: (u: string) => unknown; export const g = fetch("x");', "uses declare"],
-      ['// @ts-ignore\nconst k: "length" = "constr" + "uctor"; export const f = [1][k];', "@ts-ignore"],
-      ['/// <reference types="node" />\nexport const f = 1;', "triple-slash"],
+      ['// @ts-ignore\nconst k: "length" = "constr" + "uctor"; export const f = [1][k];', "compiler directive"],
+      ["// @TS-NOCHECK\nexport const f = 1;", "compiler directive"], // pragma names are case-insensitive
+      ['export const f = 1; /// <reference lib="dom" />', "compiler directive"],
       ['const isL = (x: string): x is "length" => true; const k: string = "c"; export const f = isL(k) ? [1][k] : 0;', "type predicate"],
       ['function f(x: string): "length"; function f(x: string) { return x; } export const g = [1][f("constructor")];', "overload"],
       ['const m = new Map(); m.set(1, "constructor"); const k: "length" = m.get(1); export const g = [1][k];', "type any"],

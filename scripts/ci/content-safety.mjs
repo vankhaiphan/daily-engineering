@@ -147,8 +147,18 @@ export function analyzeLessonFiles(files, only) {
         violations.push(`${f.path}:${line + 1} ${msg}`);
       };
       // Directives that silence or redirect the checker would let types lie.
-      if (/@ts-(?:ignore|expect-error|nocheck)/.test(f.source)) report(sf, "contains a @ts-ignore/@ts-expect-error/@ts-nocheck directive");
-      if (/^\s*\/\/\/\s*</m.test(f.source)) report(sf, "contains a triple-slash directive");
+      // Use what the parser itself recorded, plus a conservative text check in case those fields move.
+      const parsedDirectives =
+        sf.checkJsDirective ||
+        sf.commentDirectives?.length ||
+        sf.pragmas?.size ||
+        sf.referencedFiles.length ||
+        sf.typeReferenceDirectives.length ||
+        sf.libReferenceDirectives.length ||
+        sf.amdDependencies.length;
+      if (parsedDirectives || /@ts-|\/\/\/\s*</i.test(f.source)) {
+        report(sf, "contains a compiler directive (@ts-*, @jsx-style pragma or /// <...>)");
+      }
       for (const d of [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]) {
         violations.push(`${f.path} does not type-check: ${ts.flattenDiagnosticMessageText(d.messageText, " ")}`);
       }
