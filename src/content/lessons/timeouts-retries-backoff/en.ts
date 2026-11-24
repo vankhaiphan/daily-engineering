@@ -365,7 +365,7 @@ export const en: LessonBody = {
       blocks: [
         {
           type: "p",
-          text: "This lesson is an original explanation. Quotes are reproduced verbatim from the sources below. The restaurant analogy, the sequence scenarios, the code sketch, the 180 ms example, the amplification chart (arithmetic) and the jitter chart (seeded simulation) are our own illustrations. The exact full-jitter formula is flagged for review: its reference page could not be loaded during research.",
+          text: "This lesson is an original explanation. Quotes are reproduced verbatim from the sources below. The restaurant analogy, the sequence scenarios, the code sketch, the 180 ms example, the amplification chart (arithmetic) and the jitter chart (seeded simulation) are our own illustrations. The full-jitter definition is confirmed by the AWS SDK reference on retry behavior.",
         },
         { type: "sources" },
       ],

@@ -80,7 +80,8 @@
       ],
       "sources": [
         "aws-builders-library/timeouts-retries-and-backoff-with-jitter",
-        "aws-builders-library/making-retries-safe-with-idempotent-apis"
+        "aws-builders-library/making-retries-safe-with-idempotent-apis",
+        "docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html"
       ]
     }
   ]

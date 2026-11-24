@@ -35,9 +35,10 @@ export const review: LessonReview = {
     {
       id: "full-jitter-formula",
       claim: "Full jitter waits a random time between 0 and the capped exponential backoff.",
-      evidence: "Standard definition used in our simulation. The primary source points to the AWS Architecture Blog for jitter algorithms, but that page's body did not load during research, so this was not confirmed against a source.",
-      status: "needs-review",
-      note: "Confirm against https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/ or another primary source, then mark verified with a quote",
+      sourceId: "aws-sdk-retry-behavior",
+      evidence: "The SDK uses exponential backoff with full jitter. / delay = random(0, 1) × min(20,000 ms, base_delay × 2^retry) / The random multiplier is called full jitter.",
+      status: "verified",
+      note: "Verified 2026-11-24 against the AWS SDK reference. The AWS Architecture Blog article still returned no body to the fetch tool, so it is not cited as evidence.",
     },
     { id: "amplification-math", claim: "3 attempts per layer across 5 layers gives 3^5 = 243 requests at the bottom.", evidence: "Our arithmetic, matching the source's 243×; chart values checked by a unit test.", status: "derived" },
     { id: "jitter-sim", claim: "The jitter chart shows illustrative retry timing for 100 clients.", evidence: "Our deterministic, seeded simulation (no measurements); totals checked by a unit test.", status: "derived" },

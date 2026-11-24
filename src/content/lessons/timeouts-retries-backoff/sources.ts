@@ -32,4 +32,19 @@ export const sources: SourceRef[] = [
       fr: "Utilisée pour la section sur l'idempotence. La page n'indique pas de date de publication.",
     },
   },
+  {
+    id: "aws-sdk-retry-behavior",
+    title: "Retry behavior",
+    publisher: "AWS SDKs and Tools Reference Guide",
+    authors: ["Amazon Web Services"],
+    url: "https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html",
+    publishedOn: null,
+    accessedOn: "2026-11-24",
+    role: "supporting",
+    note: {
+      en: "Used to confirm the full-jitter formula. AWS documentation with no individual author or date shown; it describes the updated (2026) SDK retry behavior.",
+      vi: "Dùng để xác nhận công thức full jitter. Tài liệu AWS không ghi tác giả cá nhân hay ngày; trang mô tả hành vi retry mới (2026) của SDK.",
+      fr: "Utilisée pour confirmer la formule du full jitter. Documentation AWS sans auteur individuel ni date ; elle décrit le nouveau comportement de reprise des SDK (2026).",
+    },
+  },
 ];

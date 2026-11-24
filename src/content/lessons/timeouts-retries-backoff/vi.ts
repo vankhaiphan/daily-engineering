@@ -381,7 +381,7 @@ export const vi: LessonBody = {
       blocks: [
         {
           type: "p",
-          text: "Bài học này là phần giải thích nguyên bản. Các trích dẫn được giữ nguyên văn tiếng Anh từ nguồn bên dưới, kèm bản dịch của chúng tôi. Phép so sánh với nhà hàng, các kịch bản tuần tự, phác thảo code, ví dụ 180 ms, biểu đồ khuếch đại (số học) và biểu đồ jitter (mô phỏng có seed) là minh họa của chúng tôi. Công thức full jitter chính xác đang được gắn cờ chờ review: trang tham chiếu của nó không tải được trong quá trình nghiên cứu.",
+          text: "Bài học này là phần giải thích nguyên bản. Các trích dẫn được giữ nguyên văn tiếng Anh từ nguồn bên dưới, kèm bản dịch của chúng tôi. Phép so sánh với nhà hàng, các kịch bản tuần tự, phác thảo code, ví dụ 180 ms, biểu đồ khuếch đại (số học) và biểu đồ jitter (mô phỏng có seed) là minh họa của chúng tôi. Định nghĩa full jitter được xác nhận bởi tài liệu tham chiếu AWS SDK về hành vi retry.",
         },
         { type: "sources" },
       ],

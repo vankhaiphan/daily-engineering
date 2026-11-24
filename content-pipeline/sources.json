@@ -35,7 +35,7 @@
       "url": "https://aws.amazon.com/blogs/architecture/",
       "kind": "evergreen",
       "focus": ["aws", "distributed-systems"],
-      "access": "Article body did not come through the fetch tool for 'Exponential Backoff and Jitter' (navigation only). Treat claims from it as needs-review unless confirmed another way. Checked 2026-11-24."
+      "access": "Article body did not come through the fetch tool for 'Exponential Backoff and Jitter' (navigation only), re-checked twice on 2026-11-24. The full-jitter formula was verified instead against the AWS SDK reference: https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html"
     }
   ]
 }

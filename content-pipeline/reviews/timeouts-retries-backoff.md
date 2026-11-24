@@ -1,13 +1,14 @@
 # Review: Timeouts, Retries and Backoff with Jitter: Surviving Partial Failure
 
 - Slug: `timeouts-retries-backoff` · status: **draft** · created 2026-11-24 · provenance: lesson-generation-skill (candidate `2026-11-24-aws-timeouts-retries-jitter`)
-- Length: VI 2688 words · EN 2101 words · FR 2408 words · ~20 min
+- Length: VI 2681 words · EN 2097 words · FR 2403 words · ~20 min
 - Visuals: `sequence` (sequence), `amplification` (chart), `jitter` (chart)
-- Automated gates: pass · 2 review flag(s) · 0 warning(s)
+- Automated gates: pass · 1 review flag(s) · 0 warning(s)
 
 ## Sources
 - [Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/): AWS Builders' Library, Marc, published 2019-12-05, checked 2026-11-24 (primary)
 - [Making retries safe with idempotent APIs](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/): AWS Builders' Library, Malcolm Featonby, published **date not stated**, checked 2026-11-24 (supporting)
+- [Retry behavior](https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html): AWS SDKs and Tools Reference Guide, Amazon Web Services, published **date not stated**, checked 2026-11-24 (supporting)
 
 ## Claims to check (27)
 | | Claim | Source | Evidence |
@@ -36,12 +37,11 @@
 | ✅ | Idempotent: a request can be retried with no additional side effects. | idempotent-apis | An idempotent operation is one where a request can be retransmitted or retried with no additional side effects |
 | ✅ | AWS prefers a caller-provided client request identifier (ClientToken); SDKs generate one if absent. | idempotent-apis | incorporate a unique caller-provided client request identifier into our API contract / modeled by the ClientToken field / they will generate a unique client request identifier |
 | ✅ | Retries with the same identifier get a semantically equivalent response; mismatched parameters get a validation error. | idempotent-apis | deliver a semantically equivalent response in every case for the same unique request identifier / return a validation error indicating a parameter mismatch |
-| ⚠️ | Full jitter waits a random time between 0 and the capped exponential backoff. _(Confirm against https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/ or another primary source, then mark verified with a quote)_ | ours | Standard definition used in our simulation. The primary source points to the AWS Architecture Blog for jitter algorithms, but that page's body did not load during research, so this was not confirmed against a source. |
+| ✅ | Full jitter waits a random time between 0 and the capped exponential backoff. _(Verified 2026-11-24 against the AWS SDK reference. The AWS Architecture Blog article still returned no body to the fetch tool, so it is not cited as evidence.)_ | aws-sdk-retry-behavior | The SDK uses exponential backoff with full jitter. / delay = random(0, 1) × min(20,000 ms, base_delay × 2^retry) / The random multiplier is called full jitter. |
 | 🧮 | 3 attempts per layer across 5 layers gives 3^5 = 243 requests at the bottom. | ours | Our arithmetic, matching the source's 243×; chart values checked by a unit test. |
 | 🧮 | The jitter chart shows illustrative retry timing for 100 clients. | ours | Our deterministic, seeded simulation (no measurements); totals checked by a unit test. |
 
 ## Needs a human decision
-- [ ] claim full-jitter-formula needs review: Full jitter waits a random time between 0 and the capped exponential backoff. (Confirm against https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/ or another primary source, then mark verified with a quote)
 - [ ] status is draft: visible in dev/preview only until published
 
 ## Errors

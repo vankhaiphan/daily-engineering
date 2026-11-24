@@ -13,7 +13,7 @@ const C = {
     client: "4xx: retrying the same request won't help",
     budget: "local token bucket: no tokens, no retry",
     backoff: "capped exponential backoff…",
-    jitter: "…with full jitter (see review note)",
+    jitter: "…with full jitter",
     giveUp: "give up and surface the error",
   },
   vi: {
@@ -24,7 +24,7 @@ const C = {
     client: "4xx: retry y nguyên request cũng vô ích",
     budget: "token bucket cục bộ: hết token thì không retry",
     backoff: "backoff lũy thừa có giới hạn…",
-    jitter: "…kèm full jitter (xem ghi chú review)",
+    jitter: "…kèm full jitter",
     giveUp: "bỏ cuộc và báo lỗi lên trên",
   },
   fr: {
@@ -35,7 +35,7 @@ const C = {
     client: "4xx : renvoyer la même requête n'aidera pas",
     budget: "token bucket local : sans jeton, pas de reprise",
     backoff: "backoff exponentiel plafonné…",
-    jitter: "…avec full jitter (voir la note de relecture)",
+    jitter: "…avec full jitter",
     giveUp: "abandonner et remonter l'erreur",
   },
 } satisfies Record<Locale, Record<string, string>>;

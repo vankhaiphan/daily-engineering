@@ -7,8 +7,7 @@ import { listAllLessons } from "@/content";
 import { CATALOG } from "@/content/catalog";
 import { passAtK, passHatK, passKChart } from "@/content/lessons/agent-evals/visuals";
 import { amplification, histogram, JITTER, simulateRetries } from "@/content/lessons/timeouts-retries-backoff/visuals";
-import { checkLessonQuality } from "@/content/quality";
-import { findDuplicates } from "@/content/quality";
+import { blockingReviewFlags, checkLessonQuality, DRAFT_FLAG, findDuplicates } from "@/content/quality";
 
 const lessons = listAllLessons();
 const retries = lessons.find((l) => l.slug === "timeouts-retries-backoff")!;
@@ -43,16 +42,29 @@ describe("timeouts-retries-backoff visuals", () => {
 });
 
 describe("review gates on the generated lessons", () => {
-  it("the unconfirmed full-jitter formula stays flagged, not silently accepted", () => {
+  it("the full-jitter claim is verified against a source the lesson cites", () => {
+    const claim = retries.review.claims.find((c) => c.id === "full-jitter-formula")!;
+    expect(claim.status).toBe("verified");
+    expect(retries.sources.some((s) => s.id === claim.sourceId)).toBe(true);
+    expect(claim.evidence).toContain("delay = random(0, 1) × min(20,000 ms, base_delay × 2^retry)");
     const report = checkLessonQuality(retries, { lessons, catalog: CATALOG });
-    expect(report.reviewFlags.some((f) => f.includes("full-jitter-formula"))).toBe(true);
+    expect(blockingReviewFlags(report)).toEqual([]);
   });
 
   it("blocks publishing while a claim needs review", () => {
     const l = structuredClone(retries);
+    l.review.claims.push({ id: "unconfirmed", claim: "x", evidence: "not found in any source", status: "needs-review" });
     l.status = "published";
     const catalog = CATALOG.map((e) => (e.slug === l.slug ? { ...e, status: "published" as const } : e));
     expect(checkLessonQuality(l, { lessons, catalog }).errors).toContain("published lesson still has claims that need review");
+  });
+
+  it("only the draft marker is non-blocking; any needs-review claim blocks", () => {
+    const l = structuredClone(retries);
+    l.review.claims.push({ id: "unconfirmed", claim: "x", evidence: "not found in any source", status: "needs-review" });
+    const report = checkLessonQuality(l, { lessons, catalog: CATALOG });
+    expect(report.reviewFlags).toContain(DRAFT_FLAG);
+    expect(blockingReviewFlags(report)).toEqual([expect.stringContaining("claim unconfirmed needs review")]);
   });
 
   it("keyword overlap finds the retries lesson under any URL", () => {

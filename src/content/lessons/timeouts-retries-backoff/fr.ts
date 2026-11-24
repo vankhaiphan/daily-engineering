@@ -381,7 +381,7 @@ export const fr: LessonBody = {
       blocks: [
         {
           type: "p",
-          text: "Cette leçon est une explication originale. Les citations sont reproduites mot pour mot en anglais à partir des sources ci-dessous, avec notre traduction. L'analogie du restaurant, les scénarios de séquence, l'esquisse de code, l'exemple des 180 ms, le graphique d'amplification (arithmétique) et le graphique du jitter (simulation à graine fixe) sont nos propres illustrations. La formule exacte du full jitter est signalée pour relecture : sa page de référence n'a pas pu être chargée pendant la recherche.",
+          text: "Cette leçon est une explication originale. Les citations sont reproduites mot pour mot en anglais à partir des sources ci-dessous, avec notre traduction. L'analogie du restaurant, les scénarios de séquence, l'esquisse de code, l'exemple des 180 ms, le graphique d'amplification (arithmétique) et le graphique du jitter (simulation à graine fixe) sont nos propres illustrations. La définition du full jitter est confirmée par la référence des SDK AWS sur le comportement des reprises.",
         },
         { type: "sources" },
       ],
