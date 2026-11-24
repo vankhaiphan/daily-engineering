@@ -62,12 +62,14 @@ Removes the draft and records the reason on the candidate (so it isn't picked ag
 ### Review and publish approved content
 1. Open the PR's Vercel preview on your phone; read the lesson in VI, EN and FR; play every visualization.
 2. Work through `content-pipeline/REVIEW.md` and the lesson's `reviews/<slug>.md`. Resolve every ⚠️ claim (verify it and mark `verified` with a quote, or rewrite/remove the sentence).
-3. Publish (fails if anything is unresolved):
+3. Merge the lesson PR while it is still a **draft** (hidden in production).
+4. Publish in your own terminal (human-only: it asks you to retype the slug and refuses in agent or cloud sessions):
    ```bash
+   git switch main && git pull --ff-only && git switch -c publish/<slug>
    npm run content:publish -- <slug> --reviewer "<your name>"
    npm run check
    ```
-4. Commit, merge the PR. Production shows the lesson after the deploy.
+   Commit, push, open and merge that PR. Production shows the lesson after the deploy.
 
 ## Scheduled runs (Phase 4)
 Two weekday cloud scheduled tasks (morning AI Discovery, evening Engineering Mastery) run this pipeline unattended and open one draft PR per slot. Setup, smoke test, activation and runbook: [`SCHEDULING.md`](SCHEDULING.md).

@@ -245,6 +245,30 @@ export function planRun(input: PlanInput): Plan {
 /* Safety and outcome                                                 */
 /* ---------------------------------------------------------------- */
 
+/** Files a scheduled run may change (besides its own new lesson folder). */
+export const SCHEDULED_RUN_FILES = [
+  "src/content/catalog.json",
+  "src/content/lessons/registry.ts",
+  "content-pipeline/candidates.json",
+  "content-pipeline/coverage.json",
+  "content-pipeline/sources.json",
+] as const;
+export const SCHEDULED_RUN_DIRS = ["content-pipeline/runs/", "content-pipeline/reviews/"] as const;
+
+/**
+ * Changed paths a scheduled run is not allowed to touch: anything outside the
+ * pipeline records and the folders of lessons that are new on this branch
+ * (so no app code, scripts, workflows, settings or existing lessons).
+ */
+export function findForbiddenPaths(changed: readonly string[], newLessonSlugs: readonly string[]): string[] {
+  return changed.filter(
+    (path) =>
+      !(SCHEDULED_RUN_FILES as readonly string[]).includes(path) &&
+      !SCHEDULED_RUN_DIRS.some((dir) => path.startsWith(dir)) &&
+      !newLessonSlugs.some((slug) => path.startsWith(`src/content/lessons/${slug}/`)),
+  );
+}
+
 /** Lessons that a change would publish. Scheduled runs must leave this empty. */
 export function findPublishingChanges(base: readonly CatalogEntry[], head: readonly CatalogEntry[]): string[] {
   return head

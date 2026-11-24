@@ -27,4 +27,4 @@ Automated gates check structure, references and consistency. They can't judge wh
 - [ ] Source titles, authors, dates and URLs match the pages (dates `null` where the page shows none).
 - [ ] No passage longer than a short quote is copied.
 
-When everything is ticked: `npm run content:publish -- <slug> --reviewer "<name>"`.
+When everything is ticked: merge the draft PR, then publish from a `publish/<slug>` branch in your own terminal: `npm run content:publish -- <slug> --reviewer "<name>"` (see `SCHEDULING.md` → "Reviewing and publishing").

@@ -68,7 +68,7 @@ Lessons are researched and written by Claude Code using two project skills, and 
 | `npm run content:new -- <slug> --candidate <id>` | Scaffold a draft lesson and register it |
 | `npm run content:validate [-- <slug>] [--publish]` | Quality gates; `--publish` also fails on unresolved review flags |
 | `npm run content:report -- <slug>` | Write `content-pipeline/reviews/<slug>.md` |
-| `npm run content:publish -- <slug> --reviewer "<name>"` | Flip a reviewed draft to published (refuses if anything is unresolved) |
+| `npm run content:publish -- <slug> --reviewer "<name>"` | Human-only: flip a reviewed draft to published (asks you to retype the slug; refuses in agent/cloud sessions or with unresolved flags) |
 | `npm run content:reject -- <slug> --reason "<why>"` | Remove a draft and record why |
 | `npm run content:registry` | Regenerate registry and coverage from the catalog |
 

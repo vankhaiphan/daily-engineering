@@ -313,3 +313,58 @@ describe("content:publish is human-only", () => {
     expect(r.stderr).toContain(marker);
   }, 30_000);
 });
+
+describe("scheduled runs may only add a draft lesson (local guard + CI check)", async () => {
+  const { findForbiddenPaths } = await import("@/content/schedule");
+  const { check } = (await import("../../scripts/ci/content-safety.mjs")) as {
+    check: (i: object) => string[];
+  };
+  const base = [{ slug: "a", status: "published" }];
+  const ok = {
+    branch: "content/2026-11-25-morning",
+    baseCatalog: base,
+    headCatalog: [...base, { slug: "new", status: "draft" }],
+    baseLessonDirs: ["a", "registry.ts"],
+    readHead: () => 'status: "draft"',
+    changed: ["src/content/catalog.json", "src/content/lessons/registry.ts", "src/content/lessons/new/en.ts", "src/content/lessons/new/index.ts", "content-pipeline/runs/2026-11-25-morning.json", "content-pipeline/coverage.json"],
+  };
+
+  it("allows a new draft lesson with its pipeline records", () => {
+    expect(check(ok)).toEqual([]);
+    expect(findForbiddenPaths(ok.changed, ["new"])).toEqual([]);
+  });
+
+  it.each([
+    ["publishing via the catalog", { headCatalog: [...base, { slug: "new", status: "published" }] }, "publishes new"],
+    ["publishing via the lesson index", { readHead: () => 'status: "published"' }, 'declares status "published"'],
+    ["unpublishing an existing lesson", { headCatalog: [{ slug: "a", status: "draft" }, { slug: "new", status: "draft" }] }, "unpublishes a"],
+    ["editing an existing lesson", { changed: [...ok.changed, "src/content/lessons/a/en.ts"] }, "changes src/content/lessons/a/en.ts"],
+    ["editing the CI workflow", { changed: [...ok.changed, ".github/workflows/content-safety.yml"] }, "changes .github/workflows"],
+    ["editing scripts or settings", { changed: [...ok.changed, "scripts/content/publish.mts", ".claude/settings.json"] }, "changes scripts/content/publish.mts"],
+  ])("rejects %s", (_label, override, message) => {
+    const violations = check({ ...ok, ...override });
+    expect(violations.join("\n")).toContain(message);
+  });
+
+  it("local guard agrees on forbidden paths", () => {
+    expect(findForbiddenPaths(["src/content/lessons/a/en.ts", ".github/workflows/x.yml", "src/app/page.tsx"], ["new"])).toHaveLength(3);
+  });
+
+  it("ignores PRs that are not scheduled-run branches (e.g. a human publish PR)", () => {
+    expect(check({ ...ok, branch: "publish/new", headCatalog: [...base, { slug: "new", status: "published" }] })).toEqual([]);
+  });
+});
+
+describe("content:publish requires a human at an interactive terminal", () => {
+  it("refuses without a TTY even when the cloud markers are cleared", async () => {
+    const { spawnSync } = await import("node:child_process");
+    const root = new URL("../../", import.meta.url).pathname;
+    const r = spawnSync("npx", ["tsx", "scripts/content/publish.mts", "agent-evals", "--reviewer", "bot"], {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, DAILY_ENGINEERING_SCHEDULED: "", CLAUDE_CODE_REMOTE: "" },
+    });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("interactive terminal");
+  }, 30_000);
+});

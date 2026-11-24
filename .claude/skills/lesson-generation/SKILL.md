@@ -44,4 +44,4 @@ Read before writing: `references/authoring.md` (structure, pedagogy, translation
 - To reject a draft: `npm run content:reject -- <slug> --reason "<why>"`. It removes the files and records the reason on the candidate so it isn't picked again by accident.
 
 ## Not your job here
-Publishing (a human runs `npm run content:publish -- <slug> --reviewer "<name>"` after review), scheduling, deployment.
+Publishing (human-only, in an interactive terminal on a `publish/<slug>` branch after the draft is merged; `content:publish` refuses in agent sessions), scheduling, deployment.

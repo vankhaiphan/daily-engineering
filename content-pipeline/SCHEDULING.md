@@ -14,10 +14,11 @@ Prompts to paste into the tasks: [`scheduled/morning.md`](scheduled/morning.md),
 - **Pending topics are visible to the next run.** Each slot branch carries `content-pipeline/runs/<slot>.json` (topic, URL, keywords, status). `plan` reads every unmerged `content/*` branch with plain git, including hand-made ones (through their `coverage.json`), and skips topics already pending.
 - **Backlog limit.** No new run starts while `maxPendingLessons` (default 4) lesson branches await review. Set it in `schedule.json`.
 - **Drafts only, enforced in layers:**
-  1. **GitHub ruleset on `main`** (required, see setup): the only control that can't be bypassed by rewording a command.
-  2. `content:publish` itself refuses to run when `DAILY_ENGINEERING_SCHEDULED` or `CLAUDE_CODE_REMOTE` is set (set the first one on the cloud environment).
-  3. `finish`/`block` refuse to commit anything that publishes, unpublishes or removes a lesson (`guard`), and push only the slot branch, never with force.
-  4. Best effort only: `.claude/settings.json` denies common forms of publish, force-push, pushes to `main`, branch deletion and PR merge. Prefix rules can be sidestepped, so don't rely on them alone.
+  1. **GitHub ruleset on `main`** (required, see setup): PRs only, a required approval (so the bot can't merge its own PR), no force-push or deletion, and the `content-safety` check required.
+  2. **`content-safety` CI check** (`.github/workflows/content-safety.yml`): on every PR from a `content/<date>-<slot>` branch, it fails if the PR publishes or unpublishes a lesson, edits an existing lesson, or changes anything besides its new lesson folder and the pipeline records. It runs via `pull_request_target`, i.e. **from `main`'s copy** of the workflow and script, and reads the PR only as git data. A PR can't weaken the check that judges it.
+  3. **`content:publish` is human-only:** it requires an interactive terminal and asks you to retype the slug (agent tool calls aren't terminals), and it refuses when `DAILY_ENGINEERING_SCHEDULED` or `CLAUDE_CODE_REMOTE` is set.
+  4. **Local guard:** `finish`/`block` refuse to commit the same violations as the CI check, and push only the slot branch, never with force.
+  5. Best effort only: `.claude/settings.json` denies common forms of publish, force-push, pushes to `main`, branch deletion and PR merge. Prefix rules can be sidestepped, so they are a convenience, not a boundary.
 - **Honest outcomes.** `finish` runs lint, typecheck, unit tests, content validation and the production build itself and records the results. `GENERATED` only if all pass. Otherwise `BLOCKED`: the lesson stays as files in the PR for review, unregistered so the app still builds. Review flags (`needs-review` claims) don't block the PR; they block `content:publish`.
 - **Graceful no-ops.** Weekends, a claimed or merged slot, a full review queue, no eligible topic after discovery: the run reports and stops without pushing anything.
 
@@ -37,7 +38,7 @@ Exit codes: `0` ok · `1` failed or blocked · `2` nothing to do (no-op) · `3` 
 
 ### 1. GitHub
 1. Install the **Claude GitHub App** on `vankhaiphan/daily-engineering` (or connect with `/web-setup`). Cloud runs reach GitHub only through Anthropic's GitHub proxy; no token lives in the repo or the VM.
-2. **Protect `main`** with a ruleset (Settings → Rules → Rulesets), **required before activating the schedules**: target `main`, require a pull request before merging, block force pushes, restrict deletions. The GitHub proxy doesn't restrict which branch a run can push. This ruleset is what actually enforces "never push to main"; the scripts and settings are extra layers.
+2. **Protect `main`** with a ruleset (Settings → Rules → Rulesets), **required before activating the schedules**: target `main`; require a pull request before merging with **1 approval**; require the status check **`scheduled-run-safety`** (from the `content-safety` workflow; it appears after its first run); block force pushes; restrict deletions. Add yourself (repository admin) to the bypass list so you can still merge your own PRs. The GitHub proxy doesn't restrict which branch a run can push. This ruleset is what actually enforces "never push to main" and "never merge"; the scripts and settings are extra layers.
 3. PRs are created with the REST API (`gh api repos/{owner}/{repo}/pulls`) because the proxy rejects GraphQL (`gh pr create`). If that still fails, the run reports the compare URL and you open the PR by hand.
 
 ### 2. Cloud environment (claude.ai/code → environment settings)
@@ -100,4 +101,15 @@ At claude.ai/code/routines (or `/schedule` in the CLI), for each slot:
 | Lesson in wrong track or a duplicate slipped through | Candidate `track`/`keywords` wrong | Reject the PR; fix the candidate's `track`/`keywords` in `candidates.json` on `main` |
 
 ### Reviewing and publishing a scheduled lesson
-Same as any lesson: read it on the PR's Vercel preview, work through `REVIEW.md`, then on the PR branch run `npm run content:publish -- <slug> --reviewer "<name>"` and `npm run check`, push, merge.
+Bot PRs only ever add drafts; publishing is a separate, human-only change.
+1. Read the lesson on the PR's Vercel preview and work through `REVIEW.md` and `content-pipeline/reviews/<slug>.md`.
+2. Approve and **merge the draft PR**. The lesson is on `main` but hidden in production (drafts are visible only in dev and previews).
+3. On your machine, in a terminal:
+   ```bash
+   git switch main && git pull --ff-only
+   git switch -c publish/<slug>
+   npm run content:publish -- <slug> --reviewer "<name>"   # asks you to retype the slug
+   npm run check
+   git commit -am "content: publish <slug>" && git push -u origin publish/<slug>
+   ```
+4. Open and merge that PR. Production shows the lesson after the deploy. (The `content-safety` check ignores `publish/*` branches; the publish gate already ran.)

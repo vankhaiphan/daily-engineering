@@ -1,0 +1,34 @@
+# Server-side guard for PRs opened by scheduled lesson runs (content/<date>-<slot>).
+# pull_request_target runs THIS file and scripts/ci/content-safety.mjs from the
+# base branch, so a PR cannot change the rules it is checked against. The PR is
+# only read as git data; none of its code is installed or executed.
+# Make "content-safety / scheduled-run-safety" a required status check on main.
+name: content-safety
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  scheduled-run-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the base branch (trusted)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch the PR head as data
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+      - name: Check the scheduled-run rules
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: refs/remotes/pr/head
+        run: node scripts/ci/content-safety.mjs
